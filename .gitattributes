@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.c text eol=lf
+*.conf text eol=lf
+*.gproj text eol=lf
+*.layout text eol=lf
+*.et binary
+*.emat binary
+*.xob binary
+*.png binary

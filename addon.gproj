@@ -1,0 +1,8 @@
+GameProject {
+ ID "CopsNRobbersRP"
+ GUID "8C0F3E12B4A7D5F1"
+ TITLE "Cops n Robbers RP"
+ Dependencies {
+  "58D0FB3206B6F859"
+ }
+}

@@ -1,0 +1,24 @@
+# Reference docs (large, cloned separately)
+docs/script-api-public/
+docs/script-diff/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+
+# Workbench
+*.bak
+*.tmp
+resourceDatabase.rdb
+.editor/
+.workbench/
+.cache/
+
+# Build output
+*.pak
