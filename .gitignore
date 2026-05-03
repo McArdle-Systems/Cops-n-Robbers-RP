@@ -17,8 +17,5 @@ Thumbs.db
 *.tmp
 resourceDatabase.rdb
 
-# Generated navmesh tile data (regenerable from the .nmn definitions)
-Worlds/Navmesh/.NavData/
-
 # claude
 .claude/settings.local.json
