@@ -1,0 +1,12 @@
+GenericEntity SpawnPoint_Police {
+ components {
+  RP_DispatchSpawnPointComponent "{69472525261278C6}" {
+   m_sName "SpawnPoint_Police"
+  }
+ }
+ coords 1470.937 38 2937.143
+}
+SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1411.486 39 2772.417
+ m_sFaction "Faction1"
+}
