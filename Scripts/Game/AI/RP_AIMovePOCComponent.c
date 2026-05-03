@@ -212,9 +212,9 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 			Print("[RP_AIMovePOC] GetIn waypoint prefab missing.", LogLevel.ERROR);
 			return;
 		}
-		SCR_AIGetInWaypoint getIn = SCR_AIGetInWaypoint.Cast(wp);
+		SCR_BoardingEntityWaypoint getIn = SCR_BoardingEntityWaypoint.Cast(wp);
 		if (getIn)
-			getIn.SetVehicleEntity(vehicle);
+			getIn.SetEntity(vehicle);
 		ClearGroupWaypoints(group);
 		group.AddWaypoint(wp);
 	}
