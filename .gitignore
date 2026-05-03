@@ -16,9 +16,9 @@ Thumbs.db
 *.bak
 *.tmp
 resourceDatabase.rdb
-.editor/
-.workbench/
-.cache/
 
-# Build output
-*.pak
+# Generated navmesh tile data (regenerable from the .nmn definitions)
+Worlds/Navmesh/.NavData/
+
+# claude
+.claude/settings.local.json

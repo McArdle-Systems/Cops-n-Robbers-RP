@@ -1,0 +1,66 @@
+SCR_AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
+ components {
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A2995A7E8BC2}" {
+     NavmeshFile "{7C88BFD1B7872B44}Worlds/Navmesh/Arland_Soldiers.nmn"
+    }
+   }
+  }
+  NavmeshWorldComponent "{5584F30EEFEE1223}" {
+   NavmeshSettings ChimeraNavmeshWorld "{50FC63BEBE3973C5}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A299509CF377}" {
+     NavmeshFile "{90312AE0DA7555E3}Worlds/Navmesh/Arland_BTRLike.nmn"
+    }
+   }
+  }
+  NavmeshWorldComponent "{5C8C9B750D124A63}" {
+   NavmeshSettings NavmeshWorld "{5C8C9B750B60C6E2}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{5C90B7788942D4B8}" {
+     NavmeshFile "{90D6AB3C14C79A15}Worlds/Navmesh/Arland_LowRes.nmn"
+    }
+   }
+  }
+ }
+ coords 1425.364 39 2777.679
+}
+SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Factions/FactionManager_Base.et" {
+ coords 1442.722 39 2758.387
+ Factions {
+  SCR_Faction "{69461B82E7D9E8F0}" {
+   FactionKey "Faction1"
+   UIInfo SCR_FactionUIInfo "{69461B82E42F242A}" {
+    Name "Faction 1"
+   }
+  }
+ }
+}
+SCR_BaseGameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/GameMode_Deathmatch_Automatic.et" {
+ components {
+  RP_AIMovePOCComponent "{69461B82A722D8E4}" {
+   m_sInfantryGroupPrefab "{84E5BBAB25EA23E5}Prefabs/Groups/BLUFOR/Group_US_FireTeam.et"
+   m_sVehiclePrefab "{4A71F755A4513227}Prefabs/Vehicles/Wheeled/M998/M1025.et"
+   m_sVehicleCrewGroupPrefab "{727C134094032B1F}Prefabs/Groups/BLUFOR/Group_US_Transport.et"
+   m_sMoveWaypointPrefab "{750A8D1695BD6998}Prefabs/AI/Waypoints/AIWaypoint_Move.et"
+   m_sGetInWaypointPrefab "{712F4795CF8B91C7}Prefabs/AI/Waypoints/AIWaypoint_GetIn.et"
+   m_fSpawnDelaySeconds 3
+   m_fAutoFollowMinPlayerMoveMeters 5
+   m_bAutoFollowCrew 1
+  }
+ }
+ coords 1447.893 39 2767.548
+}
+SCR_LoadoutManager LoadoutManager : "{AA4E7419A1FF65B0}Prefabs/MP/Managers/Loadouts/LoadoutManager_Base.et" {
+ coords 1445.551 39 2761.111
+ m_aPlayerLoadouts {
+  SCR_FactionPlayerLoadout "{69461B82C34E97AF}" {
+   m_sLoadoutName "Loadout1"
+   m_sLoadoutResource "{DE15FB5FAFC3E63F}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Officer.et"
+   m_sAffiliatedFaction "Faction1"
+  }
+ }
+}
+SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ coords 1411.486 39 2772.417
+ m_sFaction "Faction1"
+}
