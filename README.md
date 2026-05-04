@@ -49,3 +49,9 @@ Prefabs/AI/            (future) authored AI group / vehicle prefabs
 Missions/              Test scenarios for the workbench
 docs/                  Design notes, references
 ```
+
+## License
+
+This work is licensed under the [Arma Public License Share Alike (APL-SA)](https://www.bohemia.net/community/licenses/arma-public-license-share-alike).
+See [LICENSE.txt](LICENSE.txt). Use must be NonCommercial and ArmaOnly;
+derivatives must be released under APL-SA. Attribution is required.
