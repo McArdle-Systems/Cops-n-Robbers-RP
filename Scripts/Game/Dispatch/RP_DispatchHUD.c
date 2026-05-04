@@ -18,9 +18,13 @@ class RP_DispatchPopup : ChimeraMenuBase
 {
 	protected static string m_sDispatchTypeStatic = "HMMWV";
 	protected static string m_sCloseHintStatic = "Press the dispatch action again to close";
+	protected static string m_sToggleActionStatic = "";
 
 	static void SetNextDispatchType(string typeTag) { m_sDispatchTypeStatic = typeTag; }
 	static void SetNextCloseHint(string hint) { m_sCloseHintStatic = hint; }
+	static void SetNextToggleAction(string actionName) { m_sToggleActionStatic = actionName; }
+
+	protected string m_sBoundToggleAction;
 
 	override void OnMenuOpen()
 	{
@@ -64,6 +68,16 @@ class RP_DispatchPopup : ChimeraMenuBase
 		{
 			input.AddActionListener("MenuBack", EActionTrigger.DOWN, OnMenuBackPressed);
 			input.AddActionListener("PauseMenu", EActionTrigger.DOWN, OnMenuBackPressed);
+
+			// Also listen for the user's toggle action (e.g. RP_OpenDispatch)
+			// so they can press the same key to close the popup. The action's
+			// gameplay contexts aren't active while the popup is open, but
+			// listening here registers in DialogContext implicitly.
+			if (!m_sToggleActionStatic.IsEmpty())
+			{
+				m_sBoundToggleAction = m_sToggleActionStatic;
+				input.AddActionListener(m_sBoundToggleAction, EActionTrigger.DOWN, OnMenuBackPressed);
+			}
 		}
 	}
 
@@ -74,6 +88,11 @@ class RP_DispatchPopup : ChimeraMenuBase
 		{
 			input.RemoveActionListener("MenuBack", EActionTrigger.DOWN, OnMenuBackPressed);
 			input.RemoveActionListener("PauseMenu", EActionTrigger.DOWN, OnMenuBackPressed);
+			if (!m_sBoundToggleAction.IsEmpty())
+			{
+				input.RemoveActionListener(m_sBoundToggleAction, EActionTrigger.DOWN, OnMenuBackPressed);
+				m_sBoundToggleAction = "";
+			}
 		}
 		super.OnMenuClose();
 	}

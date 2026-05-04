@@ -99,6 +99,7 @@ class RP_DispatchHUDComponent : SCR_BaseGameModeComponent
 
 		RP_DispatchPopup.SetNextDispatchType(m_sDispatchType);
 		RP_DispatchPopup.SetNextCloseHint(string.Format("Press [%1] again to close", m_sToggleAction));
+		RP_DispatchPopup.SetNextToggleAction(m_sToggleAction);
 
 		Print("[RP_Dispatch] OpenPopup: calling mm.OpenMenu(ChimeraMenuPreset.RP_DispatchPopup)", LogLevel.NORMAL);
 		ChimeraMenuBase menu = ChimeraMenuBase.Cast(mm.OpenMenu(ChimeraMenuPreset.RP_DispatchPopup));
