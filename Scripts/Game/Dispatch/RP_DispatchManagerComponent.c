@@ -137,6 +137,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		if (existing)
 		{
 			RedispatchExisting(existing, targetPos);
+			BroadcastSoundOnCarriersRadio(existing.GetCrewLeaderEntity(), "SOUND_DISPATCH_ONWAY");
 			return;
 		}
 
@@ -145,6 +146,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		if (currentCount >= def.m_iMaxSpawned)
 		{
 			Print(string.Format("[RP_Dispatch] Type '%1' at max (%2/%3), no available units to redispatch.", typeTag, currentCount, def.m_iMaxSpawned), LogLevel.WARNING);
+			BroadcastSoundOnEachLocalPlayersRadio("SOUND_DISPATCH_UNABLE");
 			return;
 		}
 
@@ -160,6 +162,111 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			return;
 		unit.m_vTarget = targetPos;
 		EnterState(unit, ERP_DispatchState.BOARDING_FOR_DISPATCH);
+		// AI agents + inventory items spawn over the next frame or two — defer the
+		// audio trigger so GetCrewLeaderEntity() and inventory lookup succeed.
+		GetGame().GetCallqueue().CallLater(DeferredOnWaySound, 1500, false, unit);
+	}
+
+	protected void DeferredOnWaySound(RP_DispatchedUnit unit)
+	{
+		if (!unit || !unit.IsAlive())
+			return;
+		BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_ONWAY");
+	}
+
+	// ----------------------------------------------------------------------
+	// Radio chatter
+	// ----------------------------------------------------------------------
+	// Audio plays through the radio prop in the carrier's inventory, not
+	// directly on the carrier. Two trigger contexts:
+	//   - "On the way" — carrier is the responding unit's crew leader.
+	//   - "Unable" — no responding unit, so each client plays it on the
+	//     radio in their own local player's inventory.
+
+	protected void BroadcastSoundOnCarriersRadio(IEntity carrier, string eventName)
+	{
+		if (!carrier)
+			return;
+		RplComponent rpl = RplComponent.Cast(carrier.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_Dispatch] No RplComponent on %1, falling back to local play.", carrier), LogLevel.WARNING);
+			PlaySoundOnCarriersRadioLocal(carrier, eventName);
+			return;
+		}
+		Rpc(RpcDo_PlaySoundOnCarriersRadio, rpl.Id(), eventName);
+		RpcDo_PlaySoundOnCarriersRadio(rpl.Id(), eventName);  // also play on host/server
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_PlaySoundOnCarriersRadio(RplId entityId, string eventName)
+	{
+		// Duplex playback: play on the carrier's radio (cop's voice emanating
+		// from their location, positional 3D) AND on the local player's own
+		// radio (the radio relay in their pocket). Net effect: nearby cops are
+		// heard directly + via your radio; distant cops are only heard via
+		// your radio.
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(entityId));
+		IEntity carrier = null;
+		if (rpl)
+		{
+			carrier = rpl.GetEntity();
+			PlaySoundOnCarriersRadioLocal(carrier, eventName);
+		}
+		PlayerController pc = GetGame().GetPlayerController();
+		if (!pc)
+			return;
+		IEntity localPlayer = pc.GetControlledEntity();
+		if (!localPlayer || localPlayer == carrier)
+			return;
+		PlaySoundOnCarriersRadioLocal(localPlayer, eventName);
+	}
+
+	protected void BroadcastSoundOnEachLocalPlayersRadio(string eventName)
+	{
+		Rpc(RpcDo_PlaySoundOnLocalPlayersRadio, eventName);
+		RpcDo_PlaySoundOnLocalPlayersRadio(eventName);  // also play on host/server
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_PlaySoundOnLocalPlayersRadio(string eventName)
+	{
+		PlayerController pc = GetGame().GetPlayerController();
+		if (!pc)
+			return;
+		PlaySoundOnCarriersRadioLocal(pc.GetControlledEntity(), eventName);
+	}
+
+	protected void PlaySoundOnCarriersRadioLocal(IEntity carrier, string eventName)
+	{
+		if (!carrier)
+			return;
+		SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(carrier.FindComponent(SCR_InventoryStorageManagerComponent));
+		if (!inv)
+		{
+			Print(string.Format("[RP_Dispatch] %1 has no inventory for event %2.", carrier, eventName), LogLevel.WARNING);
+			return;
+		}
+		array<typename> componentsQuery = { BaseRadioComponent };
+		IEntity radio = inv.FindItemWithComponents(componentsQuery, EStoragePurpose.PURPOSE_ANY);
+		if (!radio)
+		{
+			Print(string.Format("[RP_Dispatch] %1 has no radio in inventory for event %2.", carrier, eventName), LogLevel.WARNING);
+			return;
+		}
+		SoundComponent comm = SoundComponent.Cast(radio.FindComponent(SoundComponent));
+		if (!comm)
+		{
+			Print(string.Format("[RP_Dispatch] Radio %1 has no SoundComponent for event %2.", radio, eventName), LogLevel.WARNING);
+			return;
+		}
+		// Play at the carrier's transform — stowed radios may have a world
+		// transform of (0,0,0) since they're not in the scene graph. Pinning
+		// the SoundEvent to the carrier guarantees correct positional audio.
+		vector transf[4];
+		carrier.GetTransform(transf);
+		AudioHandle handle = comm.SoundEventTransform(eventName, transf);
+		Print(string.Format("[RP_Dispatch] SoundEventTransform('%1') on radio %2 at carrier %3 -> handle=%4", eventName, radio, carrier.GetOrigin(), handle), LogLevel.NORMAL);
 	}
 
 	// ----------------------------------------------------------------------
@@ -441,6 +548,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.LOITERING:
 				ClearWaypoints(unit.m_Crew);
+				BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_ONSCENE");
 				break;
 
 			case ERP_DispatchState.BOARDING_TO_RETURN:
@@ -449,6 +557,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.RETURNING:
 				IssueMove(unit.m_Crew, unit.m_vSpawnPoint);
+				BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_RTB");
 				break;
 
 			case ERP_DispatchState.IDLE_AT_SPAWN:

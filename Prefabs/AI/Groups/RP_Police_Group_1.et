@@ -1,0 +1,7 @@
+SCR_AIGroup : "{000CD338713F2B5A}Prefabs/AI/Groups/Group_Base.et" {
+ ID "0000000000000001"
+ m_faction "Police"
+ m_aUnitPrefabSlots {
+  "{C0F45FA0C11853D2}Prefabs/Characters/Factions/BLUFOR/US_Army/GreenBerets/Character_US_SF_Officer.et" "{C0F45FA0C11853D2}Prefabs/Characters/Factions/BLUFOR/US_Army/GreenBerets/Character_US_SF_Officer.et"
+ }
+}

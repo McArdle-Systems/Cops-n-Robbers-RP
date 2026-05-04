@@ -1,7 +1,0 @@
-SCR_AIGroup : "{000CD338713F2B5A}Prefabs/AI/Groups/Group_Base.et" {
- ID "0000000000000001"
- m_faction "Police"
- m_aUnitPrefabSlots {
-  "{90EE1B66E8482CE9}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Sheriff_SenDeputy.et" "{E12C03637B313153}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Sheriff_Deputy.et"
- }
-}

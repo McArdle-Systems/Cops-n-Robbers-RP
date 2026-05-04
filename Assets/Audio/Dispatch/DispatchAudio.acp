@@ -1,0 +1,304 @@
+AudioClass {
+ sounds {
+  SoundClass "2057" {
+   id 2057
+   name "SOUND_DISPATCH_ONWAY"
+   version 5
+   tl -100.739 -257.148
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "12306:65" {
+       id 12306
+       port 65
+      }
+     }
+    }
+   }
+  }
+  SoundClass "4105" {
+   id 4105
+   name "SOUND_DISPATCH_UNABLE"
+   version 5
+   tl -74.261 -96.391
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "15378:65" {
+       id 15378
+       port 65
+      }
+     }
+    }
+   }
+  }
+  SoundClass "6153" {
+   id 6153
+   name "SOUND_DISPATCH_RTB"
+   version 5
+   tl -65.87 76.13
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "16402:65" {
+       id 16402
+       port 65
+      }
+     }
+    }
+   }
+  }
+  SoundClass "8201" {
+   id 8201
+   name "SOUND_DISPATCH_ONSCENE"
+   version 5
+   tl -52.295 273.535
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "17426:65" {
+       id 17426
+       port 65
+      }
+     }
+    }
+   }
+  }
+ }
+ shaders {
+  ShaderClass "12306" {
+   id 12306
+   name "Spatial Shader"
+   version 5
+   tl -421 -292
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "11292:65" {
+       id 11292
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "10259:65" {
+       id 10259
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "1028:65" {
+       id 1028
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+  ShaderClass "15378" {
+   id 15378
+   name "Spatial Shader"
+   version 5
+   tl -416 -96
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "11292:65" {
+       id 11292
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "10259:65" {
+       id 10259
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "3076:65" {
+       id 3076
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+  ShaderClass "16402" {
+   id 16402
+   name "Spatial Shader"
+   version 5
+   tl -357 68
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "11292:65" {
+       id 11292
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "10259:65" {
+       id 10259
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "5124:65" {
+       id 5124
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+  ShaderClass "17426" {
+   id 17426
+   name "Spatial Shader"
+   version 5
+   tl -384.307 286.283
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "11292:65" {
+       id 11292
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "10259:65" {
+       id 10259
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "7172:65" {
+       id 7172
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+ }
+ amplitudes {
+  AmplitudeClass "10259" {
+   id 10259
+   name "Amplitude 10"
+   version 5
+   tl -669 -536
+   curve "1/r"
+   EnableDirectivity 1
+  }
+ }
+ banks_local {
+  BankLocalClass "1028" {
+   id 1028
+   name "On the way"
+   version 7
+   tl -767.565 -243.913
+   Samples {
+    AudioBankSampleClass "OnTheWay.wav" {
+     Filename "{2FBC8B207AD9C51D}Assets/Audio/Dispatch/OnTheWay.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+  BankLocalClass "3076" {
+   id 3076
+   name "Unable"
+   version 7
+   tl -766.609 -43.783
+   Samples {
+    AudioBankSampleClass "Unable.wav" {
+     Filename "{0C720A97458AC03F}Assets/Audio/Dispatch/Unable.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+  BankLocalClass "5124" {
+   id 5124
+   name "RTB"
+   version 7
+   tl -767.565 96.391
+   Samples {
+    AudioBankSampleClass "RTB.wav" {
+     Filename "{1C274BBFAED95FFD}Assets/Audio/Dispatch/RTB.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+  BankLocalClass "7172" {
+   id 7172
+   name "On scene"
+   version 7
+   tl -750.496 291.181
+   Samples {
+    AudioBankSampleClass "OnScene.wav" {
+     Filename "{F4E7A75A2DA73B01}Assets/Audio/Dispatch/OnScene.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+ }
+ spatialities {
+  SpatialityClass "11292" {
+   id 11292
+   name "Spatiality 11"
+   version 5
+   tl -665.29 -629.838
+   spatialFactor 1
+  }
+ }
+ version 1
+}

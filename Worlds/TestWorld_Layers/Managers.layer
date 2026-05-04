@@ -18,7 +18,7 @@ SCR_BaseGameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/GameM
    m_aDefinitions {
     RP_DispatchGroupDefinition "{694725250CBCEA8B}" {
      m_sTypeTag "Police"
-     m_sCrewGroupPrefab "{727C134094032B1F}Prefabs/Groups/BLUFOR/Group_US_Transport.et"
+     m_sCrewGroupPrefab "{A9B3913BCB259F0F}Prefabs/AI/Groups/RP_Police_Group_1.et"
      m_sVehiclePrefab "{4A71F755A4513227}Prefabs/Vehicles/Wheeled/M998/M1025.et"
      m_sSpawnPointName "SpawnPoint_Police"
      m_fLoiterSeconds 10
@@ -44,7 +44,7 @@ SCR_LoadoutManager LoadoutManager : "{AA4E7419A1FF65B0}Prefabs/MP/Managers/Loado
  m_aPlayerLoadouts {
   SCR_FactionPlayerLoadout "{69461B82C34E97AF}" {
    m_sLoadoutName "Deputy"
-   m_sLoadoutResource "{DE15FB5FAFC3E63F}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Officer.et"
+   m_sLoadoutResource "{C0F45FA0C11853D2}Prefabs/Characters/Factions/BLUFOR/US_Army/GreenBerets/Character_US_SF_Officer.et"
    m_sAffiliatedFaction "Police"
   }
  }
