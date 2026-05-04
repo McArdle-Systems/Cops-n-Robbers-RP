@@ -40,6 +40,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 	protected ref array<ref RP_DispatchedUnit> m_aUnits = {};
 	protected ref map<string, IEntity> m_mSpawnPoints = new map<string, IEntity>();
 	protected bool m_bTickRunning;
+	protected int m_iNextUnitId = 1;
 
 	static RP_DispatchManagerComponent GetInstance() { return s_Instance; }
 
@@ -261,6 +262,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		}
 
 		RP_DispatchedUnit unit = new RP_DispatchedUnit();
+		unit.m_iId = m_iNextUnitId++;
 		unit.m_sTypeTag = def.m_sTypeTag;
 		unit.m_Def = def;
 		unit.m_Crew = crew;
@@ -269,7 +271,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		unit.m_eState = ERP_DispatchState.SPAWNED;
 		unit.m_fStateChangedAt = GetWorldTimeSeconds();
 		m_aUnits.Insert(unit);
-		Print(string.Format("[RP_Dispatch] Spawned %1 (vehicle=%2 crew=%3)", def.m_sTypeTag, vehicle, crew), LogLevel.NORMAL);
+		Print(string.Format("[RP_Dispatch] Spawned %1#%2 (vehicle=%3 crew=%4)", def.m_sTypeTag, unit.m_iId, vehicle, crew), LogLevel.NORMAL);
 		return unit;
 	}
 
@@ -330,7 +332,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		if (unit.m_eState != ERP_DispatchState.SPAWNED && unit.m_eState != ERP_DispatchState.IDLE_AT_SPAWN)
 		{
 			float distToTarget = vector.Distance(unit.GetCurrentPosition(), unit.m_vTarget);
-			Print(string.Format("[RP_Dispatch] %1 state=%2 elapsed=%3 boarded=%4/%5 distToTarget=%6", unit.m_sTypeTag, typename.EnumToString(ERP_DispatchState, unit.m_eState), elapsed, unit.GetCrewInVehicleCount(), unit.GetCrewCount(), distToTarget), LogLevel.NORMAL);
+			Print(string.Format("[RP_Dispatch] %1#%2 state=%3 elapsed=%4 boarded=%5/%6 distToTarget=%7", unit.m_sTypeTag, unit.m_iId, typename.EnumToString(ERP_DispatchState, unit.m_eState), elapsed, unit.GetCrewInVehicleCount(), unit.GetCrewCount(), distToTarget), LogLevel.NORMAL);
 		}
 
 		switch (unit.m_eState)
@@ -346,7 +348,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
 				else if (elapsed >= def.m_fBoardingTimeSeconds)
 				{
-					Print(string.Format("[RP_Dispatch] %1 boarding failsafe fired (%2s) — only %3/%4 boarded, driving anyway.", unit.m_sTypeTag, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
+					Print(string.Format("[RP_Dispatch] %1#%2 boarding failsafe fired (%3s) — only %4/%5 boarded, driving anyway.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
 				}
 				break;
@@ -367,7 +369,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 					EnterState(unit, ERP_DispatchState.APPROACHING_ON_FOOT);
 				else if (elapsed >= def.m_fDismountTimeSeconds)
 				{
-					Print(string.Format("[RP_Dispatch] %1 dismount failsafe fired (%2s) — %3 still in vehicle, proceeding anyway.", unit.m_sTypeTag, def.m_fDismountTimeSeconds, unit.GetCrewInVehicleCount()), LogLevel.WARNING);
+					Print(string.Format("[RP_Dispatch] %1#%2 dismount failsafe fired (%3s) — %4 still in vehicle, proceeding anyway.", unit.m_sTypeTag, unit.m_iId, def.m_fDismountTimeSeconds, unit.GetCrewInVehicleCount()), LogLevel.WARNING);
 					EnterState(unit, ERP_DispatchState.APPROACHING_ON_FOOT);
 				}
 				break;
@@ -388,7 +390,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				if (boarded || elapsed >= def.m_fBoardingTimeSeconds)
 				{
 					if (!boarded)
-						Print(string.Format("[RP_Dispatch] %1 return-boarding failsafe fired (%2s).", unit.m_sTypeTag, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
+						Print(string.Format("[RP_Dispatch] %1#%2 return-boarding failsafe fired (%3s).", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
 					if (unit.m_bRedispatchPending)
 					{
 						unit.m_bRedispatchPending = false;
@@ -454,7 +456,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				break;
 		}
 
-		Print(string.Format("[RP_Dispatch] %1 -> %2", unit.m_sTypeTag, typename.EnumToString(ERP_DispatchState, next)), LogLevel.NORMAL);
+		Print(string.Format("[RP_Dispatch] %1#%2 -> %3", unit.m_sTypeTag, unit.m_iId, typename.EnumToString(ERP_DispatchState, next)), LogLevel.NORMAL);
 	}
 
 	// ----------------------------------------------------------------------

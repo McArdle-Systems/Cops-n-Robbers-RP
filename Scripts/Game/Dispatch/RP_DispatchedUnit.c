@@ -32,6 +32,7 @@ enum ERP_DispatchState
 
 class RP_DispatchedUnit
 {
+	int m_iId;
 	string m_sTypeTag;
 	ref RP_DispatchGroupDefinition m_Def;
 	SCR_AIGroup m_Crew;
