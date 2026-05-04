@@ -35,11 +35,23 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 	[Attribute(desc: "AIWaypoint_GetIn prefab (engine default in Prefabs/AI/Waypoints/).", UIWidgets.ResourcePickerThumbnail, params: "et")]
 	protected ResourceName m_sGetInWaypointPrefab;
 
-	[Attribute(defvalue: "80", desc: "Distance in meters from the player at which to spawn AI on game start.")]
+	[Attribute(defvalue: "25", desc: "Distance in meters from the player at which to spawn AI on game start.")]
 	protected float m_fSpawnDistance;
 
 	[Attribute(defvalue: "10", desc: "Seconds to wait after first player joins before spawning POC AI.")]
 	protected float m_fSpawnDelaySeconds;
+
+	[Attribute(defvalue: "1", desc: "Auto-issue a Move waypoint to the player on a timer. Disable to use manual trigger only.")]
+	protected bool m_bAutoFollowEnabled;
+
+	[Attribute(defvalue: "30", desc: "Seconds between auto-follow waypoint refreshes. Don't go too low — retasking AI mid-pathfind strings the formation out and the leader stalls.")]
+	protected float m_fAutoFollowIntervalSeconds;
+
+	[Attribute(defvalue: "25", desc: "Player must move at least this many meters since the last waypoint before a new one is issued.")]
+	protected float m_fAutoFollowMinPlayerMoveMeters;
+
+	[Attribute(defvalue: "0", desc: "Include the vehicle crew group in auto-follow. Off by default — Move conflicts with the crew's GetIn waypoint and breaks boarding.")]
+	protected bool m_bAutoFollowCrew;
 
 	// --- Runtime State ---
 
@@ -48,14 +60,17 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 	protected IEntity m_VehicleEntity;
 	protected bool m_bSpawned;
 	protected bool m_bDiagRegistered;
+	protected bool m_bAutoFollowRunning;
+	protected vector m_vLastAutoFollowTarget;
 
-	// DiagMenu IDs — must be unique across all addons. 0xCAFE prefix to avoid
-	// collisions with engine + community mods.
-	protected const int DIAG_MENU_ROOT = 0xCAFE0000;
-	protected const int DIAG_SPAWN_AI = 0xCAFE0001;
-	protected const int DIAG_MOVE_INFANTRY = 0xCAFE0002;
-	protected const int DIAG_MOVE_VEHICLE = 0xCAFE0003;
-	protected const int DIAG_DESPAWN_AI = 0xCAFE0004;
+	// DiagMenu IDs — engine caps total registered diags at 512 and treats the ID
+	// as the slot index, so values must be small. Picking a mid-range block to
+	// reduce odds of colliding with stock SCR_DiagMenuID entries.
+	protected const int DIAG_MENU_ROOT = 250;
+	protected const int DIAG_SPAWN_AI = 251;
+	protected const int DIAG_MOVE_INFANTRY = 252;
+	protected const int DIAG_MOVE_VEHICLE = 253;
+	protected const int DIAG_DESPAWN_AI = 254;
 
 	// ----------------------------------------------------------------------
 	// Lifecycle
@@ -78,6 +93,7 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 	override void OnDelete(IEntity owner)
 	{
 		GetGame().GetCallqueue().Remove(TrySpawnInitial);
+		StopAutoFollow();
 		UnregisterDiagMenu();
 		DespawnAll();
 		super.OnDelete(owner);
@@ -145,6 +161,53 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 
 		m_bSpawned = true;
 		Print(string.Format("[RP_AIMovePOC] Spawned. Infantry=%1 Vehicle=%2 Crew=%3", m_InfantryGroup, m_VehicleEntity, m_VehicleCrewGroup), LogLevel.NORMAL);
+
+		StartAutoFollow();
+	}
+
+	// ----------------------------------------------------------------------
+	// Auto-follow — periodic Move waypoint to the player without input.
+	// ----------------------------------------------------------------------
+
+	protected void StartAutoFollow()
+	{
+		if (!m_bAutoFollowEnabled || m_bAutoFollowRunning)
+			return;
+		if (!Replication.IsServer())
+			return;
+		int periodMs = (int)(m_fAutoFollowIntervalSeconds * 1000);
+		if (periodMs < 1000)
+			periodMs = 1000;
+		GetGame().GetCallqueue().CallLater(AutoFollowTick, periodMs, true);
+		m_bAutoFollowRunning = true;
+	}
+
+	protected void StopAutoFollow()
+	{
+		if (!m_bAutoFollowRunning)
+			return;
+		GetGame().GetCallqueue().Remove(AutoFollowTick);
+		m_bAutoFollowRunning = false;
+	}
+
+	protected void AutoFollowTick()
+	{
+		if (!m_InfantryGroup && !(m_bAutoFollowCrew && m_VehicleCrewGroup))
+			return;
+
+		IEntity player = GetAnyPlayerEntity();
+		if (!player)
+			return;
+
+		vector pos = player.GetOrigin();
+		if (vector.Distance(pos, m_vLastAutoFollowTarget) < m_fAutoFollowMinPlayerMoveMeters)
+			return;
+
+		m_vLastAutoFollowTarget = pos;
+		if (m_InfantryGroup)
+			IssueMoveWaypoint(m_InfantryGroup, pos);
+		if (m_bAutoFollowCrew && m_VehicleCrewGroup)
+			IssueMoveWaypoint(m_VehicleCrewGroup, pos);
 	}
 
 	// ----------------------------------------------------------------------
@@ -212,9 +275,9 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 			Print("[RP_AIMovePOC] GetIn waypoint prefab missing.", LogLevel.ERROR);
 			return;
 		}
-		SCR_AIGetInWaypoint getIn = SCR_AIGetInWaypoint.Cast(wp);
+		SCR_BoardingEntityWaypoint getIn = SCR_BoardingEntityWaypoint.Cast(wp);
 		if (getIn)
-			getIn.SetVehicleEntity(vehicle);
+			getIn.SetEntity(vehicle);
 		ClearGroupWaypoints(group);
 		group.AddWaypoint(wp);
 	}
@@ -400,11 +463,15 @@ class RP_AIMovePOCComponent : SCR_BaseGameModeComponent
 		if (m_VehicleCrewGroup && m_VehicleEntity)
 			IssueGetInWaypoint(m_VehicleCrewGroup, m_VehicleEntity);
 		m_bSpawned = true;
+
+		m_vLastAutoFollowTarget = vector.Zero;
+		StartAutoFollow();
 	}
 
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void RpcAsk_DespawnAll()
 	{
+		StopAutoFollow();
 		DespawnAll();
 	}
 }

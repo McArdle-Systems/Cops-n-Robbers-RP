@@ -16,9 +16,6 @@ Thumbs.db
 *.bak
 *.tmp
 resourceDatabase.rdb
-.editor/
-.workbench/
-.cache/
 
-# Build output
-*.pak
+# claude
+.claude/settings.local.json

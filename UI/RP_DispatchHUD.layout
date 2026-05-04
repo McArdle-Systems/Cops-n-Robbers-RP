@@ -1,0 +1,48 @@
+OverlayWidgetClass {
+ Name "RootOverlay"
+ {
+  ImageWidgetClass "{8C0F3E1200000020}" {
+   Name "Dimmer"
+   Slot OverlayWidgetSlot "{8C0F3E1200000021}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+   }
+   Color 0 0 0 0.5
+  }
+  VerticalLayoutWidgetClass "{8C0F3E1200000007}" {
+   Name "ContentLayout"
+   Slot OverlayWidgetSlot "{8C0F3E1200000008}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+    Padding 24 24 24 24
+   }
+   {
+    TextWidgetClass "{8C0F3E1200000009}" {
+     Name "TitleLine"
+     Slot LayoutSlot "{8C0F3E120000000A}" {
+      HorizontalAlign 3
+     }
+    }
+    ButtonWidgetClass "{8C0F3E120000000D}" : "{75C912A1C89BE6C2}UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout" {
+     Name "DispatchHMMWVButton"
+     Slot LayoutSlot "{8C0F3E120000000E}" {
+      HorizontalAlign 3
+      Padding 0 32 0 0
+     }
+     components {
+      SCR_ButtonTextComponent "{8C0F3E1200000040}" {
+       m_sText "Dispatch HMMWV"
+      }
+     }
+    }
+    TextWidgetClass "{8C0F3E120000000B}" {
+     Name "HintLine"
+     Slot LayoutSlot "{8C0F3E120000000C}" {
+      HorizontalAlign 3
+      Padding 0 16 0 0
+     }
+    }
+   }
+  }
+ }
+}

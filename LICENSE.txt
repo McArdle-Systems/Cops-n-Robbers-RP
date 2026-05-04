@@ -1,0 +1,36 @@
+ARMA PUBLIC LICENSE SHARE ALIKE (APL-SA)
+========================================
+
+Copyright (c) 2026 Cops n Robbers RP
+
+This work is licensed under the Arma Public License Share Alike (APL-SA).
+
+Full canonical license text published by Bohemia Interactive:
+https://www.bohemia.net/community/licenses/arma-public-license-share-alike
+
+Summary of terms (informational — the canonical text above governs):
+
+You are free to:
+  - Share, reproduce, and distribute this work
+  - Adapt, remix, and build upon this work
+
+Under the following conditions:
+  - Attribution: You must give appropriate credit, indicate if changes
+    were made, and link to this license. The original copyright notice
+    and this license file must be retained.
+  - ShareAlike: If you adapt this work, your derivative must be released
+    under the APL-SA license or an APL-SA-compatible license.
+  - NonCommercial: Use must not be primarily directed at commercial
+    advantage or monetary compensation.
+  - ArmaOnly: Use must be primarily intended for use in an Arma game.
+
+No additional restrictions: You may not apply legal or technical measures
+that restrict others from doing anything this license permits.
+
+THE LICENSED MATERIAL IS PROVIDED AS-IS, WITHOUT WARRANTIES OF ANY KIND.
+THE LICENSOR DISCLAIMS LIABILITY FOR ANY LOSSES OR DAMAGES ARISING FROM
+USE OF THIS WORK.
+
+Bohemia Interactive a.s. is not a party to this license and makes no
+warranty in connection with the licensed material. Bohemia Interactive's
+trademarks may not be used without prior written consent.
