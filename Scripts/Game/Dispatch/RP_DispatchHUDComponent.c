@@ -24,7 +24,7 @@ class RP_DispatchHUDComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "HMMWV", desc: "Type tag the popup will dispatch. Must match a RP_DispatchGroupDefinition on the manager.")]
 	protected string m_sDispatchType;
 
-	[Attribute(defvalue: "PerformAction", desc: "Bohemia input action name that toggles the dispatch popup. PerformAction=F is confirmed working. TacticalPing was unverified.")]
+	[Attribute(defvalue: "RP_OpenDispatch", desc: "Input action name that toggles the dispatch popup. Custom action defined in Configs/System/chimeraInputCommon.conf — defaults to KC_J, rebindable in Settings -> Controls.")]
 	protected string m_sToggleAction;
 
 	protected ChimeraMenuBase m_OpenMenu;

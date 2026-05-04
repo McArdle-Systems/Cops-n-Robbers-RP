@@ -58,11 +58,15 @@ class RP_DispatchedUnit
 
 	vector GetCurrentPosition()
 	{
-		if (m_Vehicle)
-			return m_Vehicle.GetOrigin();
+		// Always prefer the crew leader's position. When mounted, the leader
+		// is parented to the vehicle so this returns the vehicle position
+		// implicitly. When dismounted, this tracks the crew on foot — which
+		// the vehicle position can't.
 		IEntity leader = GetCrewLeaderEntity();
 		if (leader)
 			return leader.GetOrigin();
+		if (m_Vehicle)
+			return m_Vehicle.GetOrigin();
 		return vector.Zero;
 	}
 

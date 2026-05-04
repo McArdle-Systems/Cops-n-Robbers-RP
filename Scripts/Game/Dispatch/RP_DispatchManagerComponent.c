@@ -340,13 +340,13 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				break;
 
 			case ERP_DispatchState.BOARDING_FOR_DISPATCH:
-				// Wait for ALL crew (driver included) before driving. Partial
-				// mount means driver may not be in yet — vehicle won't move.
+				// Primary trigger: all crew physically in the vehicle.
+				// Failsafe: m_fBoardingTimeSeconds expired without success.
 				if (unit.IsAllCrewInVehicle())
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
-				else if (elapsed >= def.m_fBoardingTimeSeconds * 3)
+				else if (elapsed >= def.m_fBoardingTimeSeconds)
 				{
-					Print(string.Format("[RP_Dispatch] %1 boarding timeout (%2s) — only %3/%4 boarded, driving anyway.", unit.m_sTypeTag, def.m_fBoardingTimeSeconds * 3, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
+					Print(string.Format("[RP_Dispatch] %1 boarding failsafe fired (%2s) — only %3/%4 boarded, driving anyway.", unit.m_sTypeTag, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
 				}
 				break;
@@ -361,8 +361,15 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				break;
 
 			case ERP_DispatchState.DISMOUNTING:
-				if (elapsed >= def.m_fDismountTimeSeconds)
+				// Primary trigger: all crew physically out of the vehicle.
+				// Failsafe: m_fDismountTimeSeconds expired without success.
+				if (unit.GetCrewInVehicleCount() == 0)
 					EnterState(unit, ERP_DispatchState.APPROACHING_ON_FOOT);
+				else if (elapsed >= def.m_fDismountTimeSeconds)
+				{
+					Print(string.Format("[RP_Dispatch] %1 dismount failsafe fired (%2s) — %3 still in vehicle, proceeding anyway.", unit.m_sTypeTag, def.m_fDismountTimeSeconds, unit.GetCrewInVehicleCount()), LogLevel.WARNING);
+					EnterState(unit, ERP_DispatchState.APPROACHING_ON_FOOT);
+				}
 				break;
 
 			case ERP_DispatchState.APPROACHING_ON_FOOT:
@@ -378,10 +385,10 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			case ERP_DispatchState.BOARDING_TO_RETURN:
 				// Same all-crew check as BOARDING_FOR_DISPATCH.
 				bool boarded = unit.IsAllCrewInVehicle();
-				if (boarded || elapsed >= def.m_fBoardingTimeSeconds * 3)
+				if (boarded || elapsed >= def.m_fBoardingTimeSeconds)
 				{
 					if (!boarded)
-						Print(string.Format("[RP_Dispatch] %1 return-boarding timeout — returning anyway.", unit.m_sTypeTag), LogLevel.WARNING);
+						Print(string.Format("[RP_Dispatch] %1 return-boarding failsafe fired (%2s).", unit.m_sTypeTag, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
 					if (unit.m_bRedispatchPending)
 					{
 						unit.m_bRedispatchPending = false;

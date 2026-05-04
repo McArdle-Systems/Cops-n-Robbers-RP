@@ -24,6 +24,3 @@ SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
  }
  coords 1425.364 39 2777.679
 }
-Vehicle M1 : "{4A71F755A4513227}Prefabs/Vehicles/Wheeled/M998/M1025.et" {
- coords 1424.762 39 2772.104
-}

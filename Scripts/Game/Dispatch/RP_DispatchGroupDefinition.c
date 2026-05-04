@@ -29,13 +29,13 @@ class RP_DispatchGroupDefinition
 	[Attribute(defvalue: "30", desc: "Distance from target at which the vehicle stops and crew dismounts.")]
 	float m_fDismountDistanceMeters;
 
-	[Attribute(defvalue: "5", desc: "On-foot approach radius — crew transitions to loiter once within this distance of the target.")]
+	[Attribute(defvalue: "12", desc: "On-foot approach radius — crew transitions to loiter once within this distance of the target. Set ~12m to match Reforger's built-in Move waypoint completion radius (AI stops walking at ~10-11m from the waypoint by default).")]
 	float m_fApproachRadiusMeters;
 
-	[Attribute(defvalue: "10", desc: "Seconds allowed for crew to board a vehicle (timer-based; we don't poll vehicle occupancy).")]
+	[Attribute(defvalue: "30", desc: "WORST-CASE timeout for boarding. The state machine transitions out of boarding states as soon as crew is actually in the vehicle (status-based). This timer only fires as a failsafe if status detection fails — set high so it never fires under normal circumstances.")]
 	float m_fBoardingTimeSeconds;
 
-	[Attribute(defvalue: "5", desc: "Seconds allowed for crew to dismount before they start moving on foot.")]
+	[Attribute(defvalue: "15", desc: "WORST-CASE timeout for dismount. The state machine transitions out of DISMOUNTING as soon as crew is actually out of the vehicle (status-based). This timer only fires as a failsafe.")]
 	float m_fDismountTimeSeconds;
 
 	[Attribute(defvalue: "5", desc: "Minimum seconds to spend driving before dismount can trigger. Prevents instant-dismount when spawn is already close to the target.")]
