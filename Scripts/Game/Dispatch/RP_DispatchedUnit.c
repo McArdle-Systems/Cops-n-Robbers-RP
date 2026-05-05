@@ -43,6 +43,10 @@ class RP_DispatchedUnit
 	float m_fStateChangedAt;          // world-time of last transition
 	bool m_bRedispatchPending;
 	vector m_vPendingRedispatchTarget;
+	bool m_bForceBoardingActive;      // true once the force-board sequence
+	                                  // has fired for this state instance,
+	                                  // so the failsafe doesn't re-trip
+	                                  // every tick. Reset by EnterState.
 
 	bool IsAvailable()
 	{

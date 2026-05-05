@@ -90,6 +90,12 @@ class RP_DispatchHUDComponent : SCR_BaseGameModeComponent
 
 	protected void OpenPopup()
 	{
+		if (!LocalPlayerHasRadio())
+		{
+			Print("[RP_Dispatch] *** POPUP BLOCKED — NO RADIO IN INVENTORY *** Player needs a radio (BaseRadioComponent) to call dispatch.", LogLevel.WARNING);
+			return;
+		}
+
 		MenuManager mm = GetGame().GetMenuManager();
 		if (!mm)
 		{
@@ -118,5 +124,20 @@ class RP_DispatchHUDComponent : SCR_BaseGameModeComponent
 			return;
 		m_OpenMenu.Close();
 		m_OpenMenu = null;
+	}
+
+	protected bool LocalPlayerHasRadio()
+	{
+		PlayerController pc = GetGame().GetPlayerController();
+		if (!pc)
+			return false;
+		IEntity playerEnt = pc.GetControlledEntity();
+		if (!playerEnt)
+			return false;
+		SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(playerEnt.FindComponent(SCR_InventoryStorageManagerComponent));
+		if (!inv)
+			return false;
+		array<typename> componentsQuery = { BaseRadioComponent };
+		return inv.FindItemWithComponents(componentsQuery, EStoragePurpose.PURPOSE_ANY) != null;
 	}
 }
