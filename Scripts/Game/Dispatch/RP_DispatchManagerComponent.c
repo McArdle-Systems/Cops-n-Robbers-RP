@@ -446,16 +446,15 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.BOARDING_FOR_DISPATCH:
 				// Primary trigger: all crew physically in the vehicle.
-				// Failsafe is one-shot per state entry — once we've fired
-				// the deferred force-board, we wait for the natural
-				// IsAllCrewInVehicle trigger (or the unit getting reaped)
-				// rather than tearing down + re-issuing the boarding
-				// waypoint over and over.
+				// Failsafe is one-shot per state entry — once force-board
+				// has fired, we wait for the natural IsAllCrewInVehicle
+				// trigger (or the unit getting reaped) rather than tearing
+				// down + re-issuing the boarding waypoint repeatedly.
 				if (unit.IsAllCrewInVehicle())
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
 				else if (elapsed >= def.m_fBoardingTimeSeconds && !unit.m_bForceBoardingActive)
 				{
-					Print(string.Format("[RP_Dispatch] %1#%2 boarding failsafe fired (%3s) — only %4/%5 boarded, starting deferred force-board.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
+					Print(string.Format("[RP_Dispatch] %1#%2 boarding failsafe fired (%3s) — only %4/%5 boarded, force-boarding stragglers.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
 					unit.m_bForceBoardingActive = true;
 					ForceBoardSeq_Start(unit);
 				}
@@ -510,7 +509,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				}
 				else if (elapsed >= def.m_fBoardingTimeSeconds && !unit.m_bForceBoardingActive)
 				{
-					Print(string.Format("[RP_Dispatch] %1#%2 return-boarding failsafe fired (%3s) — starting deferred force-board.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
+					Print(string.Format("[RP_Dispatch] %1#%2 return-boarding failsafe fired (%3s) — force-boarding stragglers.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
 					unit.m_bForceBoardingActive = true;
 					ForceBoardSeq_Start(unit);
 				}
@@ -644,13 +643,16 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		group.AddWaypoint(wp);
 	}
 
-	// Force-board sequence — split into deferred phases so we can observe
-	// which step the AI dismounts on. Timeline:
-	//   T+0    ForceBoardSeq_Start    : remove GetIn waypoint, register vehicle as usable
-	//   T+2s   ForceBoardSeq_Teleport : GetInVehicle on each crew (slot-priority assign)
-	//   T+7s   ForceBoardSeq_Drive    : EnterState(DRIVING_TO_TARGET)
-	// Between each phase, the crew should remain idle in the vehicle. If they
-	// dismount, the timing of the dismount tells us which step caused it.
+	// Force-board sequence — runs when the boarding failsafe trips because
+	// crew couldn't reach the vehicle naturally (combat, distance,
+	// obstacles). Two phases, both synchronous in the same tick:
+	//   _Start    : register the vehicle with the group's usability table
+	//   _Teleport : GetInVehicle each crew member into a free slot
+	//               (PILOT first, leader to cargo so the AI driver drives),
+	//               then CompleteAllWaypoints to fire the boarding-WP
+	//               on-completion handlers that wire up the AI driver task.
+	// State machine's natural IsAllCrewInVehicle trigger handles the
+	// transition to DRIVING_TO_TARGET on the next tick.
 	protected void ForceBoardSeq_Start(RP_DispatchedUnit unit)
 	{
 		if (!unit || !unit.m_Crew || !unit.m_Vehicle)
