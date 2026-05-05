@@ -610,7 +610,6 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			getIn.SetEntity(unit.m_Vehicle);
 		ClearWaypoints(unit.m_Crew);
 		unit.m_Crew.AddWaypoint(wp);
-		unit.m_BoardingWaypoint = wp;
 	}
 
 	protected void IssueGetOut(SCR_AIGroup group, IEntity vehicle = null)
@@ -761,7 +760,6 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		// assignment, etc.) that we can't reproduce by hand and that
 		// AddUsableVehicle alone isn't enough for.
 		unit.m_Crew.CompleteAllWaypoints();
-		unit.m_BoardingWaypoint = null;
 	}
 
 	protected void ClearWaypoints(SCR_AIGroup group)
