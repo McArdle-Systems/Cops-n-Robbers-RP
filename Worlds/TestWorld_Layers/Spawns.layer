@@ -5,8 +5,9 @@ GenericEntity SpawnPoint_Police {
   }
  }
  coords 1470.937 38 2937.143
+ angles 0 -166.8 0
 }
 SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
- coords 1411.486 39 2772.417
+ coords 1438.079 39 2870.262
  m_sFaction "Police"
 }

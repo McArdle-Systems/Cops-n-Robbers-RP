@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{C0F45FA0C11853D2}Prefabs/Characters/Factions/BLUFOR/US_Army/GreenBerets/Character_US_SF_Officer.et"
+ Name "{C0F45FA0C11853D2}Prefabs/Characters/Factions/BLUFOR/US_Army/GreenBerets/RP_Character_Police_Base.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }

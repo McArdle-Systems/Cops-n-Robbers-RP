@@ -9,6 +9,7 @@
 *.png binary
 *.bmp binary
 *.edds binary
+*.wav binary
 
 # Enfusion assets (text-based but auto-generated — treat as binary for merging)
 * text=auto eol=lf

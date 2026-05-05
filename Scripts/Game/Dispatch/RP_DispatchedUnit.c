@@ -43,6 +43,12 @@ class RP_DispatchedUnit
 	float m_fStateChangedAt;          // world-time of last transition
 	bool m_bRedispatchPending;
 	vector m_vPendingRedispatchTarget;
+	AIWaypoint m_BoardingWaypoint;    // most-recent GetIn waypoint, so the
+	                                  // failsafe can remove just that one
+	                                  // instead of nuking everything queued
+	bool m_bForceBoardingActive;      // true while the deferred force-board
+	                                  // sequence is running, so the boarding
+	                                  // failsafe doesn't re-fire each tick
 
 	bool IsAvailable()
 	{

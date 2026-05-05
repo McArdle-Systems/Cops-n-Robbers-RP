@@ -157,7 +157,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			return;
 		}
 
-		RP_DispatchedUnit unit = SpawnUnit(def, sp.GetOrigin());
+		RP_DispatchedUnit unit = SpawnUnit(def, sp);
 		if (!unit)
 			return;
 		unit.m_vTarget = targetPos;
@@ -350,15 +350,19 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 	// Spawn / despawn
 	// ----------------------------------------------------------------------
 
-	protected RP_DispatchedUnit SpawnUnit(RP_DispatchGroupDefinition def, vector spawnPos)
+	protected RP_DispatchedUnit SpawnUnit(RP_DispatchGroupDefinition def, IEntity spawnPoint)
 	{
-		IEntity vehicle = SpawnEntityAt(def.m_sVehiclePrefab, spawnPos);
+		vector spawnPos = spawnPoint.GetOrigin();
+		// Vehicle inherits the spawn point's full transform so it faces the
+		// direction the marker was placed (otherwise it spawns at world
+		// identity rotation regardless of the marker's facing).
+		IEntity vehicle = SpawnEntityAtTransform(def.m_sVehiclePrefab, spawnPoint);
 		if (!vehicle)
 		{
 			Print(string.Format("[RP_Dispatch] Failed to spawn vehicle prefab for type '%1'", def.m_sTypeTag), LogLevel.ERROR);
 			return null;
 		}
-		vector crewPos = OffsetGround(spawnPos, 5, 0);
+		vector crewPos = OffsetGround(spawnPos, 15, 0);
 		IEntity crewEnt = SpawnEntityAt(def.m_sCrewGroupPrefab, crewPos);
 		SCR_AIGroup crew = SCR_AIGroup.Cast(crewEnt);
 		if (!crew)
@@ -434,14 +438,6 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		if (!def)
 			return;
 
-		// Per-tick diagnostic for in-progress units. Reduces to a single
-		// line so we can watch the state machine without flooding the log.
-		if (unit.m_eState != ERP_DispatchState.SPAWNED && unit.m_eState != ERP_DispatchState.IDLE_AT_SPAWN)
-		{
-			float distToTarget = vector.Distance(unit.GetCurrentPosition(), unit.m_vTarget);
-			Print(string.Format("[RP_Dispatch] %1#%2 state=%3 elapsed=%4 boarded=%5/%6 distToTarget=%7", unit.m_sTypeTag, unit.m_iId, typename.EnumToString(ERP_DispatchState, unit.m_eState), elapsed, unit.GetCrewInVehicleCount(), unit.GetCrewCount(), distToTarget), LogLevel.NORMAL);
-		}
-
 		switch (unit.m_eState)
 		{
 			case ERP_DispatchState.SPAWNED:
@@ -450,13 +446,18 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.BOARDING_FOR_DISPATCH:
 				// Primary trigger: all crew physically in the vehicle.
-				// Failsafe: m_fBoardingTimeSeconds expired without success.
+				// Failsafe is one-shot per state entry — once we've fired
+				// the deferred force-board, we wait for the natural
+				// IsAllCrewInVehicle trigger (or the unit getting reaped)
+				// rather than tearing down + re-issuing the boarding
+				// waypoint over and over.
 				if (unit.IsAllCrewInVehicle())
 					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
-				else if (elapsed >= def.m_fBoardingTimeSeconds)
+				else if (elapsed >= def.m_fBoardingTimeSeconds && !unit.m_bForceBoardingActive)
 				{
-					Print(string.Format("[RP_Dispatch] %1#%2 boarding failsafe fired (%3s) — only %4/%5 boarded, driving anyway.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
-					EnterState(unit, ERP_DispatchState.DRIVING_TO_TARGET);
+					Print(string.Format("[RP_Dispatch] %1#%2 boarding failsafe fired (%3s) — only %4/%5 boarded, starting deferred force-board.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds, unit.GetCrewInVehicleCount(), unit.GetCrewCount()), LogLevel.WARNING);
+					unit.m_bForceBoardingActive = true;
+					ForceBoardSeq_Start(unit);
 				}
 				break;
 
@@ -494,10 +495,8 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			case ERP_DispatchState.BOARDING_TO_RETURN:
 				// Same all-crew check as BOARDING_FOR_DISPATCH.
 				bool boarded = unit.IsAllCrewInVehicle();
-				if (boarded || elapsed >= def.m_fBoardingTimeSeconds)
+				if (boarded)
 				{
-					if (!boarded)
-						Print(string.Format("[RP_Dispatch] %1#%2 return-boarding failsafe fired (%3s).", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
 					if (unit.m_bRedispatchPending)
 					{
 						unit.m_bRedispatchPending = false;
@@ -508,6 +507,12 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 					{
 						EnterState(unit, ERP_DispatchState.RETURNING);
 					}
+				}
+				else if (elapsed >= def.m_fBoardingTimeSeconds && !unit.m_bForceBoardingActive)
+				{
+					Print(string.Format("[RP_Dispatch] %1#%2 return-boarding failsafe fired (%3s) — starting deferred force-board.", unit.m_sTypeTag, unit.m_iId, def.m_fBoardingTimeSeconds), LogLevel.WARNING);
+					unit.m_bForceBoardingActive = true;
+					ForceBoardSeq_Start(unit);
 				}
 				break;
 
@@ -527,11 +532,15 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 	{
 		unit.m_eState = next;
 		unit.m_fStateChangedAt = GetWorldTimeSeconds();
+		// Force-boarding is one-shot per state entry. Reset the flag so
+		// future BOARDING states get a fresh failsafe attempt; suppression
+		// applies only within a single state instance.
+		unit.m_bForceBoardingActive = false;
 
 		switch (next)
 		{
 			case ERP_DispatchState.BOARDING_FOR_DISPATCH:
-				IssueGetIn(unit.m_Crew, unit.m_Vehicle);
+				IssueGetIn(unit);
 				break;
 
 			case ERP_DispatchState.DRIVING_TO_TARGET:
@@ -540,6 +549,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.DISMOUNTING:
 				IssueGetOut(unit.m_Crew, unit.m_Vehicle);
+				BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_ARRIVING");
 				break;
 
 			case ERP_DispatchState.APPROACHING_ON_FOOT:
@@ -552,12 +562,12 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 				break;
 
 			case ERP_DispatchState.BOARDING_TO_RETURN:
-				IssueGetIn(unit.m_Crew, unit.m_Vehicle);
+				IssueGetIn(unit);
+				BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_RTB");
 				break;
 
 			case ERP_DispatchState.RETURNING:
 				IssueMove(unit.m_Crew, unit.m_vSpawnPoint);
-				BroadcastSoundOnCarriersRadio(unit.GetCrewLeaderEntity(), "SOUND_DISPATCH_RTB");
 				break;
 
 			case ERP_DispatchState.IDLE_AT_SPAWN:
@@ -586,11 +596,11 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		group.AddWaypoint(wp);
 	}
 
-	protected void IssueGetIn(SCR_AIGroup group, IEntity vehicle)
+	protected void IssueGetIn(RP_DispatchedUnit unit)
 	{
-		if (!group || !vehicle)
+		if (!unit || !unit.m_Crew || !unit.m_Vehicle)
 			return;
-		AIWaypoint wp = SpawnWaypoint(m_sGetInWaypointPrefab, vehicle.GetOrigin());
+		AIWaypoint wp = SpawnWaypoint(m_sGetInWaypointPrefab, unit.m_Vehicle.GetOrigin());
 		if (!wp)
 		{
 			Print("[RP_Dispatch] GetIn waypoint prefab missing.", LogLevel.ERROR);
@@ -598,9 +608,10 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		}
 		SCR_BoardingEntityWaypoint getIn = SCR_BoardingEntityWaypoint.Cast(wp);
 		if (getIn)
-			getIn.SetEntity(vehicle);
-		ClearWaypoints(group);
-		group.AddWaypoint(wp);
+			getIn.SetEntity(unit.m_Vehicle);
+		ClearWaypoints(unit.m_Crew);
+		unit.m_Crew.AddWaypoint(wp);
+		unit.m_BoardingWaypoint = wp;
 	}
 
 	protected void IssueGetOut(SCR_AIGroup group, IEntity vehicle = null)
@@ -631,6 +642,124 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		Print(string.Format("[RP_Dispatch] GetOut waypoint issued at %1 (class=%2)", pos, wp.Type()), LogLevel.NORMAL);
 		ClearWaypoints(group);
 		group.AddWaypoint(wp);
+	}
+
+	// Force-board sequence — split into deferred phases so we can observe
+	// which step the AI dismounts on. Timeline:
+	//   T+0    ForceBoardSeq_Start    : remove GetIn waypoint, register vehicle as usable
+	//   T+2s   ForceBoardSeq_Teleport : GetInVehicle on each crew (slot-priority assign)
+	//   T+7s   ForceBoardSeq_Drive    : EnterState(DRIVING_TO_TARGET)
+	// Between each phase, the crew should remain idle in the vehicle. If they
+	// dismount, the timing of the dismount tells us which step caused it.
+	protected void ForceBoardSeq_Start(RP_DispatchedUnit unit)
+	{
+		if (!unit || !unit.m_Crew || !unit.m_Vehicle)
+			return;
+
+		// Don't touch the boarding waypoint here. Removing + re-issuing it
+		// each failsafe cycle was making crew dismount as soon as the
+		// task disappeared from the queue. We let the existing waypoint
+		// auto-complete once GetInVehicle parents the crew into the seats.
+
+		SCR_AIGroupUtilityComponent groupUtil = SCR_AIGroupUtilityComponent.Cast(unit.m_Crew.FindComponent(SCR_AIGroupUtilityComponent));
+		SCR_AIVehicleUsageComponent vehUsage = SCR_AIVehicleUsageComponent.Cast(unit.m_Vehicle.FindComponent(SCR_AIVehicleUsageComponent));
+		if (groupUtil && vehUsage)
+		{
+			groupUtil.AddUsableVehicle(vehUsage);
+			Print(string.Format("[RP_Dispatch::ForceBoard] %1#%2 — registered vehicle as usable with group.", unit.m_sTypeTag, unit.m_iId), LogLevel.NORMAL);
+		}
+		else
+		{
+			Print(string.Format("[RP_Dispatch::ForceBoard] %1#%2 — could not register vehicle (groupUtil=%3 vehUsage=%4).", unit.m_sTypeTag, unit.m_iId, groupUtil, vehUsage), LogLevel.WARNING);
+		}
+
+		ForceBoardSeq_Teleport(unit);
+	}
+
+	protected void ForceBoardSeq_Teleport(RP_DispatchedUnit unit)
+	{
+		if (!unit || !unit.IsAlive())
+			return;
+
+		BaseCompartmentManagerComponent mgr = BaseCompartmentManagerComponent.Cast(unit.m_Vehicle.FindComponent(BaseCompartmentManagerComponent));
+		if (!mgr)
+		{
+			Print(string.Format("[RP_Dispatch::ForceBoard] %1#%2 — vehicle has no BaseCompartmentManagerComponent.", unit.m_sTypeTag, unit.m_iId), LogLevel.ERROR);
+			unit.m_bForceBoardingActive = false;
+			return;
+		}
+
+		// Slot priority: PILOT, then TURRET, then CARGO. Failsafe time means
+		// the vehicle is empty, so we don't filter by occupancy.
+		array<BaseCompartmentSlot> allSlots = {};
+		mgr.GetCompartments(allSlots);
+		array<BaseCompartmentSlot> ordered = {};
+		foreach (BaseCompartmentSlot s : allSlots) if (s && s.GetType() == ECompartmentType.PILOT) ordered.Insert(s);
+		foreach (BaseCompartmentSlot s : allSlots) if (s && s.GetType() == ECompartmentType.TURRET) ordered.Insert(s);
+		foreach (BaseCompartmentSlot s : allSlots) if (s && s.GetType() == ECompartmentType.CARGO) ordered.Insert(s);
+
+		// Leader rides as passenger; non-leaders fill driver/turret first.
+		IEntity leaderEnt = unit.m_Crew.GetLeaderEntity();
+		array<AIAgent> agents = {};
+		unit.m_Crew.GetAgents(agents);
+		array<AIAgent> nonLeaders = {};
+		AIAgent leaderAgent = null;
+		foreach (AIAgent a : agents)
+		{
+			if (!a)
+				continue;
+			if (a.GetControlledEntity() == leaderEnt)
+				leaderAgent = a;
+			else
+				nonLeaders.Insert(a);
+		}
+		array<AIAgent> seatingOrder = {};
+		foreach (AIAgent nl : nonLeaders) seatingOrder.Insert(nl);
+		if (leaderAgent)
+			seatingOrder.Insert(leaderAgent);
+
+		int forced = 0;
+		int skipped = 0;
+		int nextSlot = 0;
+		foreach (AIAgent agent : seatingOrder)
+		{
+			IEntity ent = agent.GetControlledEntity();
+			if (!ent)
+				continue;
+			if (ent.GetParent() == unit.m_Vehicle)
+			{
+				Print(string.Format("[RP_Dispatch::ForceBoard] %1 already parented to vehicle, skipping.", ent), LogLevel.NORMAL);
+				skipped++;
+				continue;
+			}
+			SCR_CompartmentAccessComponent access = SCR_CompartmentAccessComponent.Cast(ent.FindComponent(SCR_CompartmentAccessComponent));
+			if (!access)
+			{
+				Print(string.Format("[RP_Dispatch::ForceBoard] Crew %1 has no SCR_CompartmentAccessComponent.", ent), LogLevel.WARNING);
+				continue;
+			}
+			if (nextSlot >= ordered.Count())
+			{
+				Print(string.Format("[RP_Dispatch::ForceBoard] %1 — no more slots available.", ent), LogLevel.WARNING);
+				break;
+			}
+			BaseCompartmentSlot target = ordered[nextSlot++];
+			bool isLeader = (ent == leaderEnt);
+			bool ok = access.GetInVehicle(unit.m_Vehicle, target, true, 0, ECloseDoorAfterActions.LEAVE_OPEN, false);
+			Print(string.Format("[RP_Dispatch::ForceBoard] %1 (leader=%2) GetInVehicle(type=%3, teleport) -> %4", ent, isLeader, typename.EnumToString(ECompartmentType, target.GetType()), ok), LogLevel.NORMAL);
+			if (ok)
+				forced++;
+		}
+		Print(string.Format("[RP_Dispatch] %1#%2 force-board: %3 teleported, %4 already aboard.", unit.m_sTypeTag, unit.m_iId, forced, skipped), LogLevel.NORMAL);
+
+		// The boarding waypoint doesn't auto-complete on a teleport-induced
+		// parent change (it watches for the AI's natural boarding action).
+		// Fire CompleteAllWaypoints now — crew is parented in, so the
+		// completion handler runs the on-board side effects (driver-task
+		// assignment, etc.) that we can't reproduce by hand and that
+		// AddUsableVehicle alone isn't enough for.
+		unit.m_Crew.CompleteAllWaypoints();
+		unit.m_BoardingWaypoint = null;
 	}
 
 	protected void ClearWaypoints(SCR_AIGroup group)
@@ -670,6 +799,22 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		EntitySpawnParams params = new EntitySpawnParams();
 		params.TransformMode = ETransformMode.WORLD;
 		params.Transform[3] = pos;
+		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
+	}
+
+	// Spawns the prefab using the reference entity's full world transform
+	// (position + rotation), so the spawned entity inherits the marker's
+	// facing direction.
+	protected IEntity SpawnEntityAtTransform(ResourceName prefab, IEntity refEntity)
+	{
+		if (prefab.IsEmpty() || !refEntity)
+			return null;
+		Resource res = Resource.Load(prefab);
+		if (!res || !res.IsValid())
+			return null;
+		EntitySpawnParams params = new EntitySpawnParams();
+		params.TransformMode = ETransformMode.WORLD;
+		refEntity.GetTransform(params.Transform);
 		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
 	}
 

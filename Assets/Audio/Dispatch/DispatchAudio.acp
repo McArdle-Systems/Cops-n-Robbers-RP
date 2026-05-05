@@ -68,13 +68,30 @@ AudioClass {
     }
    }
   }
+  SoundClass "20489" {
+   id 20489
+   name "SOUND_DISPATCH_ARRIVING"
+   version 5
+   tl -59.432 428.742
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "19474:65" {
+       id 19474
+       port 65
+      }
+     }
+    }
+   }
+  }
  }
  shaders {
   ShaderClass "12306" {
    id 12306
    name "Spatial Shader"
    version 5
-   tl -421 -292
+   tl -403.807 -243.068
    ins {
     ConnectionsClass "con:0" {
      id 0
@@ -112,7 +129,7 @@ AudioClass {
    id 15378
    name "Spatial Shader"
    version 5
-   tl -416 -96
+   tl -406.742 -45.745
    ins {
     ConnectionsClass "con:0" {
      id 0
@@ -150,7 +167,7 @@ AudioClass {
    id 16402
    name "Spatial Shader"
    version 5
-   tl -357 68
+   tl -403.288 97.095
    ins {
     ConnectionsClass "con:0" {
      id 0
@@ -188,7 +205,7 @@ AudioClass {
    id 17426
    name "Spatial Shader"
    version 5
-   tl -384.307 286.283
+   tl -404.145 291.573
    ins {
     ConnectionsClass "con:0" {
      id 0
@@ -213,6 +230,44 @@ AudioClass {
      links {
       ConnectionClass "7172:65" {
        id 7172
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+  ShaderClass "19474" {
+   id 19474
+   name "Spatial Shader"
+   version 5
+   tl -406.034 470.937
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "11292:65" {
+       id 11292
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "10259:65" {
+       id 10259
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "18436:65" {
+       id 18436
        port 65
       }
      }
@@ -284,6 +339,20 @@ AudioClass {
    Samples {
     AudioBankSampleClass "OnScene.wav" {
      Filename "{F4E7A75A2DA73B01}Assets/Audio/Dispatch/OnScene.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+  BankLocalClass "18436" {
+   id 18436
+   name "Bank 18"
+   version 7
+   tl -754.831 473
+   Samples {
+    AudioBankSampleClass "Arriving.wav" {
+     Filename "{0119E8C5BF75DAE8}Assets/Audio/Dispatch/Arriving.wav"
      Probability 100
      Index 0
      SampleMetadata ""
