@@ -25,5 +25,6 @@ SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
  coords 1425.364 39 2777.679
 }
 Vehicle Suburban_police1 : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et" {
- coords 1442.182 38.141 2870.341
+ coords 3267.245 1.964 2914.296
+ angles 0 -125.071 0
 }

@@ -42,6 +42,12 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 	protected bool m_bTickRunning;
 	protected int m_iNextUnitId = 1;
 
+	// Per-client cache of "carrier -> their last-known radio entity". Lets
+	// us keep emitting from a radio after it's been dropped, since the
+	// inventory lookup obviously fails for entities no longer in inventory.
+	// Refreshed every time inventory lookup succeeds.
+	protected ref map<IEntity, IEntity> m_mCarrierToRadio = new map<IEntity, IEntity>();
+
 	static RP_DispatchManagerComponent GetInstance() { return s_Instance; }
 
 	// ----------------------------------------------------------------------
@@ -241,17 +247,27 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 	{
 		if (!carrier)
 			return;
+		// Prefer the radio currently in carrier's inventory; if not found,
+		// fall back to the cached "last-known" radio for this carrier so a
+		// dropped radio still emits from where it landed.
+		IEntity radio = null;
+		bool fromInventory = false;
 		SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(carrier.FindComponent(SCR_InventoryStorageManagerComponent));
-		if (!inv)
+		if (inv)
 		{
-			Print(string.Format("[RP_Dispatch] %1 has no inventory for event %2.", carrier, eventName), LogLevel.WARNING);
-			return;
+			array<typename> componentsQuery = { BaseRadioComponent };
+			radio = inv.FindItemWithComponents(componentsQuery, EStoragePurpose.PURPOSE_ANY);
+			if (radio)
+			{
+				m_mCarrierToRadio.Set(carrier, radio);
+				fromInventory = true;
+			}
 		}
-		array<typename> componentsQuery = { BaseRadioComponent };
-		IEntity radio = inv.FindItemWithComponents(componentsQuery, EStoragePurpose.PURPOSE_ANY);
+		if (!radio)
+			radio = m_mCarrierToRadio.Get(carrier);
 		if (!radio)
 		{
-			Print(string.Format("[RP_Dispatch] %1 has no radio in inventory for event %2.", carrier, eventName), LogLevel.WARNING);
+			Print(string.Format("[RP_Dispatch] %1 has no radio (inventory empty + no cached radio) for event %2.", carrier, eventName), LogLevel.WARNING);
 			return;
 		}
 		SoundComponent comm = SoundComponent.Cast(radio.FindComponent(SoundComponent));
@@ -260,13 +276,19 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			Print(string.Format("[RP_Dispatch] Radio %1 has no SoundComponent for event %2.", radio, eventName), LogLevel.WARNING);
 			return;
 		}
-		// Play at the carrier's transform — stowed radios may have a world
-		// transform of (0,0,0) since they're not in the scene graph. Pinning
-		// the SoundEvent to the carrier guarantees correct positional audio.
+		// Stowed inventory items often have a bogus world transform of
+		// (0,0,0) since they're not in the scene graph — pin to the
+		// carrier's transform so the audio emanates from the cop. Once
+		// dropped, the radio is a real world entity with a valid transform,
+		// so emit from the radio itself (continues playing from where it
+		// landed even if the player walks away).
 		vector transf[4];
-		carrier.GetTransform(transf);
+		if (fromInventory)
+			carrier.GetTransform(transf);
+		else
+			radio.GetTransform(transf);
 		AudioHandle handle = comm.SoundEventTransform(eventName, transf);
-		Print(string.Format("[RP_Dispatch] SoundEventTransform('%1') on radio %2 at carrier %3 -> handle=%4", eventName, radio, carrier.GetOrigin(), handle), LogLevel.NORMAL);
+		Print(string.Format("[RP_Dispatch] SoundEventTransform('%1') on radio %2 (fromInventory=%3) at %4 -> handle=%5", eventName, radio, fromInventory, transf[3], handle), LogLevel.NORMAL);
 	}
 
 	// ----------------------------------------------------------------------
@@ -545,6 +567,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			case ERP_DispatchState.DRIVING_TO_TARGET:
 				IssueMove(unit.m_Crew, unit.m_vTarget);
 				SetSirenLights(unit, true);
+				SetVehicleHeadlightsIfDark(unit);
 				break;
 
 			case ERP_DispatchState.DISMOUNTING:
@@ -569,6 +592,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			case ERP_DispatchState.RETURNING:
 				IssueMove(unit.m_Crew, unit.m_vSpawnPoint);
 				SetSirenLights(unit, false);
+				SetVehicleHeadlightsIfDark(unit);
 				break;
 
 			case ERP_DispatchState.IDLE_AT_SPAWN:
@@ -842,6 +866,56 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			user = unit.m_Vehicle;
 		scripted.PerformAction(unit.m_Vehicle, user);
 		Print(string.Format("[RP_Dispatch] %1#%2 siren_lights -> %3", unit.m_sTypeTag, unit.m_iId, desiredOn), LogLevel.NORMAL);
+	}
+
+	// Turns on the vehicle's main headlights only when the sun is set
+	// (TimeAndWeatherManagerEntity.IsSunSet covers dusk through dawn).
+	// Doesn't turn them off — letting them stay on through DISMOUNTING /
+	// LOITERING / BOARDING_TO_RETURN matches how a real police car would
+	// idle on-scene with its lights on.
+	protected void SetVehicleHeadlightsIfDark(RP_DispatchedUnit unit)
+	{
+		if (!unit || !unit.m_Vehicle)
+			return;
+		ChimeraWorld world = ChimeraWorld.CastFrom(GetGame().GetWorld());
+		if (!world)
+			return;
+		TimeAndWeatherManagerEntity tw = world.GetTimeAndWeatherManager();
+		if (!tw)
+			return;
+		if (!tw.IsSunSet())
+			return;  // bright enough — leave headlights alone
+		BaseActionsManagerComponent actionMgr = BaseActionsManagerComponent.Cast(unit.m_Vehicle.FindComponent(BaseActionsManagerComponent));
+		if (!actionMgr)
+			return;
+		array<BaseUserAction> actions = {};
+		actionMgr.GetActionsList(actions);
+		SCR_LightsPresenceUserAction headlights = null;
+		string actionName;
+		foreach (BaseUserAction a : actions)
+		{
+			SCR_LightsPresenceUserAction cast = SCR_LightsPresenceUserAction.Cast(a);
+			if (cast)
+			{
+				headlights = cast;
+				actionName = a.GetActionName();
+				break;
+			}
+		}
+		if (!headlights)
+		{
+			Print(string.Format("[RP_Dispatch] No SCR_LightsPresenceUserAction on vehicle %1.", unit.m_Vehicle), LogLevel.WARNING);
+			return;
+		}
+		// Same suffix-as-state-of-truth pattern used for siren_lights.
+		bool currentlyOn = actionName.Contains("_State_Off");
+		if (currentlyOn)
+			return;
+		IEntity user = unit.GetCrewLeaderEntity();
+		if (!user)
+			user = unit.m_Vehicle;
+		headlights.PerformAction(unit.m_Vehicle, user);
+		Print(string.Format("[RP_Dispatch] %1#%2 headlights ON (sun is set)", unit.m_sTypeTag, unit.m_iId), LogLevel.NORMAL);
 	}
 
 	protected AIWaypoint SpawnWaypoint(ResourceName prefab, vector pos)
