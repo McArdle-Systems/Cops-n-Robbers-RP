@@ -22,10 +22,9 @@ SCR_BaseGameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/GameM
      m_sVehiclePrefab "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et"
      m_sSpawnPointName "SpawnPoint_Police"
      m_fLoiterSeconds 10
-     m_fDismountDistanceMeters 20
      m_fApproachRadiusMeters 13
      m_fBoardingTimeSeconds 2
-     m_fDismountTimeSeconds 20
+     m_fDismountTimeSeconds 30
      m_fCleanupTimeoutSeconds 30
     }
    }

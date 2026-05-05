@@ -544,6 +544,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.DRIVING_TO_TARGET:
 				IssueMove(unit.m_Crew, unit.m_vTarget);
+				SetSirenLights(unit, true);
 				break;
 
 			case ERP_DispatchState.DISMOUNTING:
@@ -567,6 +568,7 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 
 			case ERP_DispatchState.RETURNING:
 				IssueMove(unit.m_Crew, unit.m_vSpawnPoint);
+				SetSirenLights(unit, false);
 				break;
 
 			case ERP_DispatchState.IDLE_AT_SPAWN:
@@ -773,6 +775,75 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			if (wp)
 				group.RemoveWaypoint(wp);
 		}
+	}
+
+	// Toggles the vehicle's siren_lights user action only when the live
+	// state (queried from the action's BaseLightManagerComponent) differs
+	// from what we want. Reading state-of-truth from the engine each time
+	// means a player jumping in and toggling the lights manually doesn't
+	// desync our intent — next state transition reconciles correctly.
+	protected void SetSirenLights(RP_DispatchedUnit unit, bool desiredOn)
+	{
+		if (!unit)
+		{
+			Print("[RP_Dispatch] SetSirenLights early-out: unit is null", LogLevel.WARNING);
+			return;
+		}
+		if (!unit.m_Vehicle)
+		{
+			Print(string.Format("[RP_Dispatch] %1#%2 SetSirenLights early-out: vehicle is null", unit.m_sTypeTag, unit.m_iId), LogLevel.WARNING);
+			return;
+		}
+		Print(string.Format("[RP_Dispatch] %1#%2 SetSirenLights(desired=%3) entry", unit.m_sTypeTag, unit.m_iId, desiredOn), LogLevel.NORMAL);
+		BaseActionsManagerComponent actionMgr = BaseActionsManagerComponent.Cast(unit.m_Vehicle.FindComponent(BaseActionsManagerComponent));
+		if (!actionMgr)
+		{
+			Print(string.Format("[RP_Dispatch] Vehicle %1 has no BaseActionsManagerComponent for siren_lights.", unit.m_Vehicle), LogLevel.WARNING);
+			return;
+		}
+		// Action name carries a state suffix that inverts with the prompt:
+		//   '..._State_On'  -> action will turn it ON, so currently OFF
+		//   '..._State_Off' -> action will turn it OFF, so currently ON
+		// Reading state from the suffix is self-syncing — if a player jumps
+		// in and toggles manually, the engine updates the action name and
+		// our next call sees the right state. (BaseLightManagerComponent's
+		// GetLightsEnabled is the master enable flag, not the on/off state.)
+		array<BaseUserAction> actions = {};
+		actionMgr.GetActionsList(actions);
+		BaseUserAction lightAction = null;
+		string actionName;
+		foreach (BaseUserAction a : actions)
+		{
+			if (!a)
+				continue;
+			string n = a.GetActionName();
+			if (n.StartsWith("siren_lights"))
+			{
+				lightAction = a;
+				actionName = n;
+				break;
+			}
+		}
+		if (!lightAction)
+		{
+			Print(string.Format("[RP_Dispatch] No action prefixed 'siren_lights' on vehicle %1.", unit.m_Vehicle), LogLevel.WARNING);
+			return;
+		}
+		bool currentlyOn = actionName.Contains("_State_Off");
+		Print(string.Format("[RP_Dispatch] %1#%2 siren_lights name='%3' currentlyOn=%4 desired=%5", unit.m_sTypeTag, unit.m_iId, actionName, currentlyOn, desiredOn), LogLevel.NORMAL);
+		if (currentlyOn == desiredOn)
+			return;
+		ScriptedUserAction scripted = ScriptedUserAction.Cast(lightAction);
+		if (!scripted)
+		{
+			Print(string.Format("[RP_Dispatch] siren_lights on %1 isn't ScriptedUserAction (class=%2).", unit.m_Vehicle, lightAction.Type()), LogLevel.WARNING);
+			return;
+		}
+		IEntity user = unit.GetCrewLeaderEntity();
+		if (!user)
+			user = unit.m_Vehicle;
+		scripted.PerformAction(unit.m_Vehicle, user);
+		Print(string.Format("[RP_Dispatch] %1#%2 siren_lights -> %3", unit.m_sTypeTag, unit.m_iId, desiredOn), LogLevel.NORMAL);
 	}
 
 	protected AIWaypoint SpawnWaypoint(ResourceName prefab, vector pos)
