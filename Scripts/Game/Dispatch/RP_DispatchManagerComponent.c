@@ -794,7 +794,6 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			Print(string.Format("[RP_Dispatch] %1#%2 SetSirenLights early-out: vehicle is null", unit.m_sTypeTag, unit.m_iId), LogLevel.WARNING);
 			return;
 		}
-		Print(string.Format("[RP_Dispatch] %1#%2 SetSirenLights(desired=%3) entry", unit.m_sTypeTag, unit.m_iId, desiredOn), LogLevel.NORMAL);
 		BaseActionsManagerComponent actionMgr = BaseActionsManagerComponent.Cast(unit.m_Vehicle.FindComponent(BaseActionsManagerComponent));
 		if (!actionMgr)
 		{
@@ -830,7 +829,6 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 			return;
 		}
 		bool currentlyOn = actionName.Contains("_State_Off");
-		Print(string.Format("[RP_Dispatch] %1#%2 siren_lights name='%3' currentlyOn=%4 desired=%5", unit.m_sTypeTag, unit.m_iId, actionName, currentlyOn, desiredOn), LogLevel.NORMAL);
 		if (currentlyOn == desiredOn)
 			return;
 		ScriptedUserAction scripted = ScriptedUserAction.Cast(lightAction);
