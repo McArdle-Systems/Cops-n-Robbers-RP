@@ -9,31 +9,35 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
   }
  }
 }
-SCR_BaseGameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/GameMode_Deathmatch_Automatic.et" {
+RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMode_Deathmatch_Automatic.et" {
  components {
-  RP_DispatchHUDComponent "{6947307143D0241A}" {
+  RP_DispatchHUDComponent "{694E1EEC91BD294F}" {
    m_sDispatchType "Police"
   }
-  RP_DispatchManagerComponent "{6947252510116F23}" {
+  RP_DispatchManagerComponent "{694E1EEC96FBEFCD}" {
    m_aDefinitions {
-    RP_DispatchGroupDefinition "{694725250CBCEA8B}" {
+    RP_DispatchGroupDefinition "{694E1EEC893828AC}" {
      m_sTypeTag "Police"
      m_sCrewGroupPrefab "{A9B3913BCB259F0F}Prefabs/AI/Groups/RP_Police_Group_1.et"
      m_sVehiclePrefab "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et"
      m_sSpawnPointName "SpawnPoint_Police"
      m_fLoiterSeconds 10
-     m_fApproachRadiusMeters 13
-     m_fBoardingTimeSeconds 2
-     m_fDismountTimeSeconds 30
-     m_fCleanupTimeoutSeconds 30
     }
    }
    m_sMoveWaypointPrefab "{750A8D1695BD6998}Prefabs/AI/Waypoints/AIWaypoint_Move.et"
    m_sGetInWaypointPrefab "{712F4795CF8B91C7}Prefabs/AI/Waypoints/AIWaypoint_GetIn.et"
    m_sGetOutWaypointPrefab "{C40316EE26846CAB}Prefabs/AI/Waypoints/AIWaypoint_GetOut.et"
   }
+  RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
+   m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
+   m_fSpeedLimitKmh 30
+  }
+  RP_TrafficLoopComponent "{694E1EF5FFBE5B61}" {
+   m_sCrewGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+   m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
+  }
  }
- coords 1447.893 39 2767.548
+ coords 3259.196 2.003 2888.64
 }
 RadioManagerEntity RadioManager : "{B8E09FAB91C4ECCD}Prefabs/Systems/Radio/RadioManager.et" {
  coords 1412.994 39 2798.212

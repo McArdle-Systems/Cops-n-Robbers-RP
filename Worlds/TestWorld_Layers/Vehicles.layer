@@ -1,0 +1,16 @@
+Vehicle Suburban_police1 : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et" {
+ components {
+  RP_PoliceVehicleComponent "{694E1EF60B7C49D2}" {
+  }
+ }
+ coords 3267.245 1.964 2914.296
+ angles 0 -125.071 0
+}
+Vehicle CIV_van_1 : "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_cargo_CIV_randomized.et" {
+ components {
+  RP_TrafficMarkerComponent "{694E1EF6E6DBA1F3}" {
+  }
+ }
+ coords 3148.011 13.398 2729.398
+ angles 0 -62.02 0
+}
