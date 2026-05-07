@@ -36,6 +36,11 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
    m_sCrewGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
    m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
   }
+  RP_VehicleHighlightComponent "{694E1EF60A20F900}" {
+   m_sLightPrefab "{A4FE19D3B7C42501}Prefabs/Effects/Lights/RP_HighlightLight.et"
+   m_vLightOffset 0 2.952 0
+   m_fLifetimeSec 0
+  }
  }
  coords 3259.196 2.003 2888.64
 }

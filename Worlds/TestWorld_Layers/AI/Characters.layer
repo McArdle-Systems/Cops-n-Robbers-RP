@@ -27,3 +27,6 @@ SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
 SCR_ChimeraCharacter : "{9B443DD4C1F6DCAD}Prefabs/Characters/Factions/CIV/Character_CIV_baseLoadout.et" {
  coords 3260.896 2 2905.512
 }
+GenericEntity : "{BF147C5FBB45CD77}Prefabs/Structures/BuildingParts/Eletrical/HazardBeacon_01/HazardBeacon_01_light.et" {
+ coords 3259.765 2.954 2912.047
+}

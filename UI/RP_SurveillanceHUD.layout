@@ -1,63 +1,63 @@
 OverlayWidgetClass {
  Name "SurveillanceRoot"
  {
-  HorizontalLayoutWidgetClass "{8C0F3E1200000500}" {
+  VerticalLayoutWidgetClass "{8C0F3E1200000511}" {
    Name "Panel"
    Slot OverlayWidgetSlot "{8C0F3E1200000501}" {
-    HorizontalAlign 0
+    HorizontalAlign 1
     VerticalAlign 0
-    Padding 32 32 0 0
+    Padding 0 32 0 0
    }
    {
-    VerticalLayoutWidgetClass "{8C0F3E1200000502}" {
-     Name "SpeedField"
-     Slot LayoutSlot "{8C0F3E1200000503}" {
-      Padding 0 0 64 0
+    HorizontalLayoutWidgetClass "{8C0F3E1200000500}" {
+     Name "FieldsRow"
+     Slot LayoutSlot "{8C0F3E1200000514}" {
+      HorizontalAlign 1
      }
      {
-      TextWidgetClass "{8C0F3E1200000504}" {
-       Name "SpeedLabel"
-       Slot LayoutSlot "{8C0F3E1200000505}" {
-        HorizontalAlign 1
+      VerticalLayoutWidgetClass "{8C0F3E1200000502}" {
+       Name "SpeedField"
+       Slot LayoutSlot "{8C0F3E1200000503}" {
+        Padding 0 0 64 0
+       }
+       {
+        TextWidgetClass "{8C0F3E1200000504}" {
+         Name "SpeedLabel"
+         Slot LayoutSlot "{8C0F3E1200000505}" {
+          HorizontalAlign 1
+         }
+        }
+        TextWidgetClass "{8C0F3E1200000506}" {
+         Name "SpeedValue"
+         Slot LayoutSlot "{8C0F3E1200000507}" {
+          HorizontalAlign 1
+         }
+        }
        }
       }
-      TextWidgetClass "{8C0F3E1200000506}" {
-       Name "SpeedValue"
-       Slot LayoutSlot "{8C0F3E1200000507}" {
-        HorizontalAlign 1
+      VerticalLayoutWidgetClass "{8C0F3E120000050A}" {
+       Name "PlateField"
+       {
+        TextWidgetClass "{8C0F3E120000050B}" {
+         Name "PlateLabel"
+         Slot LayoutSlot "{8C0F3E120000050C}" {
+          HorizontalAlign 1
+         }
+        }
+        TextWidgetClass "{8C0F3E120000050D}" {
+         Name "PlateValue"
+         Slot LayoutSlot "{8C0F3E120000050E}" {
+          HorizontalAlign 1
+         }
+        }
        }
-      }
-      TextWidgetClass "{8C0F3E1200000508}" {
-       Name "SpeedDot"
-       Slot LayoutSlot "{8C0F3E1200000509}" {
-        HorizontalAlign 1
-       }
-       Color 0 1 0 1
       }
      }
     }
-    VerticalLayoutWidgetClass "{8C0F3E120000050A}" {
-     Name "PlateField"
-     {
-      TextWidgetClass "{8C0F3E120000050B}" {
-       Name "PlateLabel"
-       Slot LayoutSlot "{8C0F3E120000050C}" {
-        HorizontalAlign 1
-       }
-      }
-      TextWidgetClass "{8C0F3E120000050D}" {
-       Name "PlateValue"
-       Slot LayoutSlot "{8C0F3E120000050E}" {
-        HorizontalAlign 1
-       }
-      }
-      TextWidgetClass "{8C0F3E120000050F}" {
-       Name "PlateDot"
-       Slot LayoutSlot "{8C0F3E1200000510}" {
-        HorizontalAlign 1
-       }
-       Color 0 1 0 1
-      }
+    TextWidgetClass "{8C0F3E1200000512}" {
+     Name "LockIndicator"
+     Slot LayoutSlot "{8C0F3E1200000513}" {
+      HorizontalAlign 1
      }
     }
    }

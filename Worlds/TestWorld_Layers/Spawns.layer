@@ -14,7 +14,7 @@ $grp GenericEntity {
     m_eType CREW_SPAWN
    }
   }
-  coords 3145.384 13.514 2727.148
+  coords 3266.425 2.355 2867.885
  }
 }
 SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {

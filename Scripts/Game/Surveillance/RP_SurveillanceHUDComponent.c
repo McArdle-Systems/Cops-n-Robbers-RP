@@ -1,12 +1,30 @@
 /**
  * RP_SurveillanceHUDComponent
  *
- * Toggleable Active Surveillance overlay (LPR + radar). Top-left,
+ * Toggleable Active Surveillance overlay (LPR + radar). Top-center,
  * non-modal — does not lock the cursor or block input. Two fields
- * (SPEED, PLATE), each with a status dot. Dot is green when the
- * scanned vehicle's reading is OK (within speed limit / plate not
- * flagged) and red otherwise. When no target is in the cone, both
- * fields show "—" and the dots stay green.
+ * (SPEED, PLATE) and a top LOCK indicator that surfaces only while a
+ * lock is active.
+ *
+ * Speed lock state machine (all state resets on every HUD open):
+ *   NORMAL   : both fields track the currently scanned target. Labels
+ *              and values white. PLATE colors red iff watchlist flag
+ *              (always false in current POC).
+ *   FLASHING : entered the moment the target's speed crosses
+ *              m_fSpeedLimitKmh. SPEED VALUE freezes at the trigger
+ *              speed, PLATE freezes at the trigger vehicle's plate,
+ *              both fields colored red, AND the entire field row
+ *              blinks (rapid off / longer on) for m_fFlashDurationSec
+ *              to grab attention. Peak speed for the locked vehicle
+ *              is tracked silently across this window.
+ *   LOCKED   : snap-to-peak. SPEED VALUE shows the highest speed
+ *              observed for the locked vehicle and only ever rises.
+ *              PLATE stays at that vehicle's plate. Both fields red,
+ *              steady. LOCK indicator visible up top. Radar only
+ *              updates while the locked vehicle is in the cone — out
+ *              of cone = no peak update, back in cone = tracking
+ *              resumes. Only way to release the lock is to close +
+ *              reopen the HUD.
  *
  * Gating: only available while seated in a vehicle that carries
  * RP_PoliceVehicleComponent. Pressing the toggle outside a police
@@ -26,12 +44,28 @@
  * surfaced under the CNR keybinding category.
  */
 
+enum ERP_SpeedState
+{
+	NORMAL,
+	FLASHING,
+	LOCKED,
+}
+
 [ComponentEditorProps(category: "RP/Surveillance", description: "Tag — marks a vehicle as a police cruiser. Surveillance HUD only activates while seated in a tagged vehicle.")]
 class RP_PoliceVehicleComponentClass : ScriptComponentClass
 {
 }
 
 class RP_PoliceVehicleComponent : ScriptComponent
+{
+}
+
+[ComponentEditorProps(category: "RP/Audio", description: "Cop-equipment audio bank holder. Attach to a police vehicle and configure with the equipment .acp (radar, MDT, etc.). The surveillance HUD plays through this on LOCK.")]
+class RP_CopAudioComponentClass : SoundComponentClass
+{
+}
+
+class RP_CopAudioComponent : SoundComponent
 {
 }
 
@@ -54,16 +88,41 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "50.0", desc: "Cone range in meters.")]
 	protected float m_fConeRangeMeters;
 
-	[Attribute(defvalue: "0.25", desc: "Scan interval in seconds. Drives both the cone scan and the in-cop-vehicle gate check.")]
+	[Attribute(defvalue: "0.25", desc: "Scan interval in seconds. Drives the cone scan, the in-cop-vehicle gate check, and the speed-lock state machine.")]
 	protected float m_fScanIntervalSeconds;
 
-	[Attribute(defvalue: "50.0", desc: "Speed limit (km/h). At or below = green dot, above = red.")]
+	[Attribute(defvalue: "50.0", desc: "Speed limit (km/h). At or below = white, above = triggers FLASHING.")]
 	protected float m_fSpeedLimitKmh;
+
+	[Attribute(defvalue: "1.5", desc: "Duration in seconds of the warning flash before LOCK engages.")]
+	protected float m_fFlashDurationSec;
+
+	[Attribute(defvalue: "0.06", desc: "Flash 'off' phase duration in seconds (rapid).")]
+	protected float m_fFlashOffSec;
+
+	[Attribute(defvalue: "0.24", desc: "Flash 'on' phase duration in seconds (longer steady).")]
+	protected float m_fFlashOnSec;
+
+	[Attribute(defvalue: "SOUND_RADAR_BEEPING", desc: "Sound event triggered the moment LOCK engages. Empty = silent. Length is controlled on the audio side (BankWorks event) since the script API has no StopSound.")]
+	protected string m_sLockSoundEvent;
 
 	protected Widget m_wRoot;
 	protected bool m_bVisible;
 	protected bool m_bActionRegistered;
 	protected ref array<IEntity> m_aQueryResults = {};
+
+	// Speed-lock state. Reset on every Show().
+	protected ERP_SpeedState m_eSpeedState;
+	protected IEntity m_LockedVehicle;
+	protected float m_fTriggerSpeedKmh;
+	protected float m_fPeakSpeedKmh;
+	protected string m_sLockedPlate;
+	protected float m_fFlashEndTime;
+
+	// Flash-animation runtime
+	protected bool m_bFlashTickRunning;
+	protected bool m_bFlashOn;
+	protected float m_fFlashNextToggle;
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -77,6 +136,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	{
 		GetGame().GetCallqueue().Remove(TryClientInit);
 		GetGame().GetCallqueue().Remove(Tick);
+		StopFlashTick();
 		UnregisterAction();
 		DestroyWidget();
 		super.OnDelete(owner);
@@ -142,15 +202,13 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 				Print(string.Format("[RP_Surveillance] Layout failed to load: %1", m_sLayoutPath), LogLevel.ERROR);
 				return;
 			}
+			SetText("LockIndicator", "LOCK");
 			SetText("SpeedLabel", "SPEED");
 			SetText("PlateLabel", "PLATE");
-			SetText("SpeedDot", "■");
-			SetText("PlateDot", "■");
-			// Explicit initial color so the dots are visibly green even
-			// before the first Tick() resolves a target.
-			SetDotColor("SpeedDot", true);
-			SetDotColor("PlateDot", true);
+			// Lock indicator is permanently red; visibility is what we toggle.
+			SetWidgetColor("LockIndicator", 0xFFFF0000);
 		}
+		ResetLockState();
 		m_wRoot.SetVisible(true);
 		m_bVisible = true;
 		GetGame().GetCallqueue().CallLater(Tick, (int)(m_fScanIntervalSeconds * 1000), true);
@@ -162,6 +220,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		if (m_wRoot)
 			m_wRoot.SetVisible(false);
 		GetGame().GetCallqueue().Remove(Tick);
+		StopFlashTick();
 		m_bVisible = false;
 	}
 
@@ -171,6 +230,26 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			return;
 		m_wRoot.RemoveFromHierarchy();
 		m_wRoot = null;
+	}
+
+	// Resets the speed-lock state machine and the visible HUD back to
+	// defaults. Called on every Show() so close+reopen is a clean slate.
+	protected void ResetLockState()
+	{
+		m_eSpeedState = ERP_SpeedState.NORMAL;
+		m_LockedVehicle = null;
+		m_fTriggerSpeedKmh = 0;
+		m_fPeakSpeedKmh = 0;
+		m_sLockedPlate = "";
+		m_fFlashEndTime = 0;
+		StopFlashTick();
+		SetText("SpeedValue", "—");
+		SetText("PlateValue", "—");
+		SetFieldRed("Speed", false);
+		SetFieldRed("Plate", false);
+		SetFieldVisible("Speed", true);
+		SetFieldVisible("Plate", true);
+		SetWidgetVisible("LockIndicator", false);
 	}
 
 	protected void Tick()
@@ -185,24 +264,139 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		}
 
 		IEntity target = FindVehicleInCone(copCar);
-		if (!target)
+		float currentSpeedKmh = 0;
+		string currentPlate = "—";
+		if (target)
 		{
-			SetText("SpeedValue", "—");
-			SetText("PlateValue", "—");
-			SetDotColor("SpeedDot", true);
-			SetDotColor("PlateDot", true);
-			return;
+			currentSpeedKmh = GetVehicleSpeedKmh(target);
+			currentPlate = GetVehiclePlate(target);
+
+			// Promote into the highlight registry — refreshes lifetime so the
+			// light stays attached while the vehicle remains in the cone.
+			RP_VehicleHighlightComponent hl = RP_VehicleHighlightComponent.GetInstance();
+			if (hl)
+				hl.Highlight(target);
 		}
 
-		float speedKmh = GetVehicleSpeedKmh(target);
-		string plate = GetVehiclePlate(target);
-		bool overLimit = IsSpeedOverLimit(speedKmh);
-		bool plateFlag = IsPlateFlagged(plate);
+		float now = GetWorldTimeSeconds();
 
-		SetText("SpeedValue", string.Format("%1 km/h", Math.Round(speedKmh)));
-		SetText("PlateValue", plate);
-		SetDotColor("SpeedDot", !overLimit);
-		SetDotColor("PlateDot", !plateFlag);
+		switch (m_eSpeedState)
+		{
+			case ERP_SpeedState.NORMAL:
+			{
+				if (target && IsSpeedOverLimit(currentSpeedKmh))
+				{
+					// Trigger — freeze display at trigger speed/plate, lock to
+					// this specific vehicle, kick off flash.
+					m_LockedVehicle = target;
+					m_fTriggerSpeedKmh = currentSpeedKmh;
+					m_fPeakSpeedKmh = currentSpeedKmh;
+					m_sLockedPlate = currentPlate;
+					m_fFlashEndTime = now + m_fFlashDurationSec;
+					m_eSpeedState = ERP_SpeedState.FLASHING;
+					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fTriggerSpeedKmh)));
+					SetText("PlateValue", m_sLockedPlate);
+					SetFieldRed("Speed", true);
+					SetFieldRed("Plate", true);
+					StartFlashTick();
+					PlayLockSound(copCar);
+					break;
+				}
+				if (target)
+				{
+					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(currentSpeedKmh)));
+					SetText("PlateValue", currentPlate);
+					SetFieldRed("Speed", false);
+					SetFieldRed("Plate", IsPlateFlagged(currentPlate));
+				}
+				else
+				{
+					SetText("SpeedValue", "—");
+					SetText("PlateValue", "—");
+					SetFieldRed("Speed", false);
+					SetFieldRed("Plate", false);
+				}
+				break;
+			}
+
+			case ERP_SpeedState.FLASHING:
+			{
+				// Track peak silently — but only when the LOCKED vehicle is in
+				// the cone. Out of cone = no update; back in cone resumes.
+				if (m_LockedVehicle && IsVehicleInCone(copCar, m_LockedVehicle))
+				{
+					float lockedSpeed = GetVehicleSpeedKmh(m_LockedVehicle);
+					if (lockedSpeed > m_fPeakSpeedKmh)
+						m_fPeakSpeedKmh = lockedSpeed;
+				}
+				if (now >= m_fFlashEndTime)
+				{
+					// Snap to peak, lock engaged.
+					m_eSpeedState = ERP_SpeedState.LOCKED;
+					StopFlashTick();
+					SetFieldVisible("Speed", true);
+					SetFieldVisible("Plate", true);
+					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh)));
+					SetWidgetVisible("LockIndicator", true);
+				}
+				break;
+			}
+
+			case ERP_SpeedState.LOCKED:
+			{
+				// Speed only rises, and only when the locked vehicle is back
+				// in the cone. Plate stays frozen at the original violator.
+				if (m_LockedVehicle && IsVehicleInCone(copCar, m_LockedVehicle))
+				{
+					float lockedSpeed = GetVehicleSpeedKmh(m_LockedVehicle);
+					if (lockedSpeed > m_fPeakSpeedKmh)
+					{
+						m_fPeakSpeedKmh = lockedSpeed;
+						SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh)));
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	// Fast animation tick driving the field blink during FLASHING.
+	// Toggles label+value visibility for both fields together on a
+	// "rapid off / longer on" pattern.
+	protected void StartFlashTick()
+	{
+		if (m_bFlashTickRunning)
+			return;
+		m_bFlashOn = true;
+		SetFieldVisible("Speed", true);
+		SetFieldVisible("Plate", true);
+		m_fFlashNextToggle = GetWorldTimeSeconds() + m_fFlashOnSec;
+		GetGame().GetCallqueue().CallLater(FlashTick, 30, true);
+		m_bFlashTickRunning = true;
+	}
+
+	protected void StopFlashTick()
+	{
+		if (!m_bFlashTickRunning)
+			return;
+		GetGame().GetCallqueue().Remove(FlashTick);
+		m_bFlashTickRunning = false;
+		SetFieldVisible("Speed", true);
+		SetFieldVisible("Plate", true);
+	}
+
+	protected void FlashTick()
+	{
+		float now = GetWorldTimeSeconds();
+		if (now < m_fFlashNextToggle)
+			return;
+		m_bFlashOn = !m_bFlashOn;
+		SetFieldVisible("Speed", m_bFlashOn);
+		SetFieldVisible("Plate", m_bFlashOn);
+		if (m_bFlashOn)
+			m_fFlashNextToggle = now + m_fFlashOnSec;
+		else
+			m_fFlashNextToggle = now + m_fFlashOffSec;
 	}
 
 	// Walks up the parent chain from the player's controlled entity until
@@ -280,12 +474,47 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		return true;
 	}
 
+	// Cone test for a single specific vehicle (vs FindVehicleInCone, which
+	// returns whichever is closest). Used by the LOCKED state to gate peak
+	// updates on the locked vehicle's presence in the cone.
+	protected bool IsVehicleInCone(IEntity copCar, IEntity vehicle)
+	{
+		if (!copCar || !vehicle)
+			return false;
+		vector tm[4];
+		copCar.GetTransform(tm);
+		vector toEnt = vehicle.GetOrigin() - tm[3];
+		float dist = toEnt.Length();
+		if (dist < 0.5 || dist > m_fConeRangeMeters)
+			return false;
+		vector dir = toEnt * (1.0 / dist);
+		float halfAngleCos = Math.Cos(m_fConeHalfAngleDeg * Math.DEG2RAD);
+		return vector.Dot(dir, tm[2]) >= halfAngleCos;
+	}
+
 	protected float GetVehicleSpeedKmh(IEntity vehicle)
 	{
 		Physics phys = vehicle.GetPhysics();
 		if (!phys)
 			return 0;
 		return phys.GetVelocity().Length() * 3.6;
+	}
+
+	// Plays the lock sound event through the cop car's RP_CopAudioComponent
+	// (which loads the equipment .acp). HUD-only / local — no RPC.
+	protected void PlayLockSound(IEntity copCar)
+	{
+		if (m_sLockSoundEvent.IsEmpty() || !copCar)
+			return;
+		RP_CopAudioComponent sc = RP_CopAudioComponent.Cast(copCar.FindComponent(RP_CopAudioComponent));
+		if (!sc)
+		{
+			Print("[RP_Surveillance] No RP_CopAudioComponent on cop car — radar beep skipped. Add one to the cop vehicle prefab and configure it with the equipment .acp.", LogLevel.WARNING);
+			return;
+		}
+		vector tm[4];
+		copCar.GetTransform(tm);
+		sc.SoundEventTransform(m_sLockSoundEvent, tm);
 	}
 
 	// POC stub: stand-in plate from the entity's workbench name.
@@ -310,6 +539,14 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		return false;
 	}
 
+	protected float GetWorldTimeSeconds()
+	{
+		BaseWorld world = GetGame().GetWorld();
+		if (!world)
+			return 0;
+		return world.GetWorldTime() / 1000.0;
+	}
+
 	protected void SetText(string widgetName, string text)
 	{
 		if (!m_wRoot)
@@ -322,8 +559,39 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			tw.SetText(text);
 	}
 
-	// 0xAARRGGBB packed. Green = OK, red = flagged.
-	protected void SetDotColor(string widgetName, bool isOk)
+	// Colors a (label + value) pair red on violation, white otherwise.
+	// fieldName is "Speed" or "Plate"; resolves to <fieldName>Label and
+	// <fieldName>Value.
+	protected void SetFieldRed(string fieldName, bool isRed)
+	{
+		int color;
+		if (isRed)
+			color = 0xFFFF0000;
+		else
+			color = 0xFFFFFFFF;
+		SetWidgetColor(fieldName + "Label", color);
+		SetWidgetColor(fieldName + "Value", color);
+	}
+
+	// Toggles label+value visibility for a field together — used by the
+	// flash blink so the entire field winks in unison.
+	protected void SetFieldVisible(string fieldName, bool visible)
+	{
+		SetWidgetVisible(fieldName + "Label", visible);
+		SetWidgetVisible(fieldName + "Value", visible);
+	}
+
+	protected void SetWidgetVisible(string widgetName, bool visible)
+	{
+		if (!m_wRoot)
+			return;
+		Widget w = m_wRoot.FindAnyWidget(widgetName);
+		if (w)
+			w.SetVisible(visible);
+	}
+
+	// 0xAARRGGBB packed.
+	protected void SetWidgetColor(string widgetName, int color)
 	{
 		if (!m_wRoot)
 			return;
@@ -331,11 +599,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		if (!w)
 			return;
 		TextWidget tw = TextWidget.Cast(w);
-		if (!tw)
-			return;
-		if (isOk)
-			tw.SetColorInt(0xFF00FF00);
-		else
-			tw.SetColorInt(0xFFFF0000);
+		if (tw)
+			tw.SetColorInt(color);
 	}
 }
