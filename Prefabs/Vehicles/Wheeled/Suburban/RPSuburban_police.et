@@ -7,6 +7,9 @@ Vehicle : "{33AB44A084BAA0CD}Prefabs/Vehicles/Wheeled/M998/M1025_base.et" {
    }
   }
   AG0_MFDManagerComponent "{6951108DC6061F2B}" {
+   m_EnabledCompartments {
+    "Pilot" "PilotCompartment"
+   }
   }
   BaseLightManagerComponent "{51E210F17D2534F7}" {
    LightSlots {
@@ -473,6 +476,12 @@ Vehicle : "{33AB44A084BAA0CD}Prefabs/Vehicles/Wheeled/M998/M1025_base.et" {
      Offset -0.09 0.8399 1.0879
      Angles 0 -165.1198 0
      Prefab "{9E591E6A616C89B4}Prefabs/Items/SpeedRadar.et"
+    }
+    RegisteringComponentSlotInfo MFDScreen {
+     PivotID "v_body"
+     Offset -0.09 0.8399 1.0879
+     Angles 0 -165.1198 0
+     Prefab "{7B4D8A3F2E195D01}Prefabs/Items/SpeedRadar_Screen.et"
     }
    }
   }

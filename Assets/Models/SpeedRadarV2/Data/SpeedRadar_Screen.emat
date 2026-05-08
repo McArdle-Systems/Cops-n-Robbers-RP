@@ -1,7 +1,5 @@
 MatPBRBasic {
- Color 0.002 0.002 0.002 1
  Emissive 1 0.133 0 0
  EmissiveLV 0.8
- ApplyAlbedoToEmissive 1
  BCRMap "$rendertarget"
 }

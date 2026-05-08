@@ -25,10 +25,6 @@ GenericEntity {
      Offset 0 0 0
      Prefab "{7B4D8A3F2E195C01}Prefabs/Items/SpeedRadar_LED.et"
     }
-    EntitySlotInfo Screen {
-     Offset 0 0 0
-     Prefab "{7B4D8A3F2E195D01}Prefabs/Items/SpeedRadar_Screen.et"
-    }
    }
   }
   Hierarchy "{6950F33B69DCDD55}" {

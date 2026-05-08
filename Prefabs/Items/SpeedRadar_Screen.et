@@ -9,7 +9,7 @@ GenericEntity {
      TextWidgets {
       AG0_MFDTextConfig "{6951140B5B96610B}" {
        WidgetName "SpeedText"
-       SignalName "IsOccupied"
+       SignalName "rotation0"
        FormatString "RADAR %1"
       }
      }
@@ -21,7 +21,7 @@ GenericEntity {
    Materials {
     MaterialAssignClass "{69510A5C5D412C2A}" {
      SourceMaterial "SpeedRadar_Screen"
-     AssignedMaterial "{06C7951685F08B81}Assets/MFD_PIPMaterial.emat"
+     AssignedMaterial "{1A548D04B07DD5F3}Assets/Models/SpeedRadarV2/Data/SpeedRadar_Screen.emat"
     }
    }
   }
