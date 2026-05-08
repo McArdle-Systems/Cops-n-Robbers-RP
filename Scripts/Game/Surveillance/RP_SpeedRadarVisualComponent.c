@@ -186,8 +186,7 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 			ResolveChildren();
 		ApplyMaterialForState();
 		ApplyBlinkyForState();
-		// Display widget tree is owned by the HUD component now —
-		// see RP_SurveillanceHUDComponent.SetupRadarRT().
+		ApplyDisplayForState();
 	}
 
 	protected void ApplyDisplayForState()
@@ -229,19 +228,21 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 			Print("[RP_SpeedRadarVisual] RTSurface widget not found — display will be inert.", LogLevel.ERROR);
 			return;
 		}
-		// DEBUG: layout positions the RT widget at (100, 100) via
-		// Padding so we can visually confirm the TextWidget renders.
-		// Once confirmed, change the layout's padding to push the RT
-		// off-screen.
-		// SetRenderTarget intentionally skipped during this debug pass —
-		// once the widget tree is confirmed visible on the workspace,
-		// re-enable to bind RT contents to the screen child's material.
-		// m_wRTSurface.SetRenderTarget(m_ScreenChild);
+		// Bind the RT widget's contents as $rendertarget on the screen
+		// child entity. The screen .emat references it via BCRMap so
+		// the rendered widget appears as the surface's base color.
+		m_wRTSurface.SetRenderTarget(m_ScreenChild);
 
 		Widget t = m_wDisplayRoot.FindAnyWidget("SpeedText");
 		m_wSpeedText = TextWidget.Cast(t);
 		if (m_wSpeedText)
 			m_wSpeedText.SetText(m_sSpeedText);
+
+		// Force a refresh so the RT widget actually renders its children
+		// to the texture. Without this, the texture can stay empty even
+		// after SetRenderTarget binds it to the entity.
+		m_wDisplayRoot.Update();
+		m_wRTSurface.Update();
 	}
 
 	protected void DestroyDisplay()
@@ -268,10 +269,11 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 				break;
 			case ERP_RadarVisualState.SCANNING:
 			case ERP_RadarVisualState.FLASHING:
-				ledMat = m_sLEDOnMaterial;
-				screenMat = m_sScreenOffMaterial;
-				break;
 			case ERP_RadarVisualState.LOCKED:
+				// The "on" screen material carries the BCRMap = $rendertarget
+				// reference, so we use it for every powered state. Real radars
+				// are continuously lit while in use; the LOCKED-vs-other
+				// distinction shows up only in the rendered text content.
 				ledMat = m_sLEDOnMaterial;
 				screenMat = m_sScreenOnMaterial;
 				break;

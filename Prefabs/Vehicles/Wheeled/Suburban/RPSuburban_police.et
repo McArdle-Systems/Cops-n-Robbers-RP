@@ -6,6 +6,8 @@ Vehicle : "{33AB44A084BAA0CD}Prefabs/Vehicles/Wheeled/M998/M1025_base.et" {
     "{9DD9C6279F4489B4}Sounds/SupportStations/SupportStations_Vehicles.acp" "{1E4E57FCBAA4E206}Sounds/Vehicles/_SharedData/Vehicles_Wind_.acp" "{F41C3D53A2B69D85}Sounds/Vehicles/_SharedData/Destruction/Vehicles_Destruction_Fires.acp" "{BA8A5BD290F5FB34}Sounds/Vehicles/_SharedData/Destruction/Vehicles_Destruction.acp" "{D2DF25DD8B4A4B62}Sounds/Destruction/Multiphase/Destruction_Multiphase_Vehicle.acp" "{F1030E91E4B33E24}Sounds/Vehicles/_SharedData/WaterInteractions/Vehicles_WaterInteractions.acp" "{6F9A468D1D5D3CE6}Sounds/Vehicles/Wheeled/SILVERADOZ71/Vehicles_Chevy_Engine.acp" "{2E85188DA0268926}Sounds/Vehicles/Wheeled/SILVERADOZ71/Vehicles_Chevy_Animations.acp" "{A7C14927117DA4DA}Sounds/Vehicles/Wheeled/M998/Vehicles_M998_Dampers.acp" "{31110C47C3BC26BE}Sounds/Vehicles/Wheeled/SILVERADOZ71/Vehicles_police_Horn.acp" "{5D55FC056E1F7A62}Sounds/Vehicles/Wheeled/M998/Vehicles_M998_Rain_Armored.acp" "{465B31754AAAE693}Sounds/Vehicles/_SharedData/Crashes/Cars/Vehicles_Crashes_Cars.acp"
    }
   }
+  AG0_MFDManagerComponent "{6951108DC6061F2B}" {
+  }
   BaseLightManagerComponent "{51E210F17D2534F7}" {
    LightSlots {
     SCR_LightSlot "{51E210F3B1CB7E19}" {
@@ -466,10 +468,10 @@ Vehicle : "{33AB44A084BAA0CD}Prefabs/Vehicles/Wheeled/M998/M1025_base.et" {
      Offset 0 0.0694 0
      Prefab "{159DFEC6964567FF}Prefabs/Vehicles/Wheeled/Suburban/VehParts/Suburban_trunk_black.et"
     }
-    RegisteringComponentSlotInfo Radar {
+    RegisteringComponentSlotInfo SpeedRadar {
      PivotID "v_body"
-     Offset -0.0887 0.8297 1.0762
-     Angles 0 -159.8282 0
+     Offset -0.09 0.8399 1.0879
+     Angles 0 -165.1198 0
      Prefab "{9E591E6A616C89B4}Prefabs/Items/SpeedRadar.et"
     }
    }

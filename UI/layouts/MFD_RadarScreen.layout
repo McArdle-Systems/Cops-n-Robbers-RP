@@ -1,0 +1,136 @@
+FrameWidgetClass {
+ Name "rootFrame"
+ {
+  RTTextureWidgetClass "{6951108C18B401AE}" {
+   Name "RTTexture0"
+   Slot FrameWidgetSlot "{6292C9F015F09E00}" {
+    OffsetLeft 0
+    OffsetTop 0
+    SizeX 512
+    OffsetRight -512
+    SizeY 682
+    OffsetBottom -682
+   }
+   {
+    FrameWidgetClass "{6951108C18B401AD}" {
+     Name "Frame0"
+     Slot FrameWidgetSlot "{64EE823FE0EB32E0}" {
+      OffsetLeft 0
+      OffsetTop 0
+      SizeX 512
+      OffsetRight -512
+      SizeY 682
+      OffsetBottom -682
+     }
+     Color 0 0 0 1
+     {
+      ImageWidgetClass "{6951108C18B401AC}" {
+       Name "Image0"
+       Slot FrameWidgetSlot "{64EE823FCA504BAE}" {
+        PositionX 0
+        OffsetLeft 0
+        PositionY 0
+        OffsetTop 0
+        SizeX 512
+        OffsetRight -512
+        SizeY 682
+        OffsetBottom -682
+       }
+       Color 0 0 0 1
+      }
+      TextWidgetClass "{6951140FE65BDB53}" {
+       Name "SpeedText"
+       Slot FrameWidgetSlot "{6951140FE65BDB7B}" {
+        PositionX 50
+        OffsetLeft 50
+        PositionY 250
+        OffsetTop 250
+        SizeX 412
+        OffsetRight -462
+        SizeY 200
+        OffsetBottom -450
+       }
+       Text "85 km/h"
+       "Font Size" 120
+       Color 1 1 1 1
+      }
+      ProgressBarWidgetClass "{6951108C18B401A3}" {
+       Name "TapeRotorRPM"
+       Slot FrameWidgetSlot "{64EE8230357D92EC}" {
+        PositionX 128
+        OffsetLeft 128
+        PositionY 64
+        OffsetTop 64
+        SizeX 256
+        OffsetRight -384
+        SizeY 32
+        OffsetBottom -96
+       }
+      }
+      RichTextWidgetClass "{6951108C18B4C090}" {
+       Name "TextRotorRPM"
+       Slot FrameWidgetSlot "{64EE82304213D0A5}" {
+        PositionX 126.265
+        OffsetLeft 126.265
+        PositionY 27.057
+        OffsetTop 27.057
+        SizeX 100
+        OffsetRight -226.265
+        SizeY 30
+        OffsetBottom -57.057
+       }
+      }
+      ProgressBarWidgetClass "{6951108C18B4C092}" {
+       Name "TapeTorque"
+       Slot FrameWidgetSlot "{64EE8230357D92EC}" {
+        PositionX 126.712
+        OffsetLeft 126.712
+        PositionY 149.036
+        OffsetTop 149.036
+        SizeX 256
+        OffsetRight -382.712
+        SizeY 32
+        OffsetBottom -181.036
+       }
+      }
+      RichTextWidgetClass "{6951108C18B4C97B}" {
+       Name "TextTorque"
+       Slot FrameWidgetSlot "{64EE82304213D0A5}" {
+        PositionX 124.977
+        OffsetLeft 124.977
+        PositionY 112.093
+        OffsetTop 112.093
+        SizeX 100
+        OffsetRight -224.977
+        SizeY 30
+        OffsetBottom -142.093
+       }
+      }
+      OverlayWidgetClass "{6951108C18B4C97A}" {
+       Name "Overlay0"
+       Slot FrameWidgetSlot "{64F74256EB0FFAB3}" {
+        PositionX 125.078
+        OffsetLeft 125.078
+        PositionY 204.758
+        OffsetTop 204.758
+        SizeX 259.359
+        OffsetRight -384.437
+        SizeY 245.876
+        OffsetBottom -450.634
+       }
+       {
+        ImageWidgetClass "{6951108C18B495F7}" {
+         Name "CompassImage"
+         Slot OverlayWidgetSlot "{64F74256F0BF182F}" {
+         }
+         Texture "{908B4F07DE4E0D5C}UI/imagesets/avionics/mfd/hsd_compass.edds"
+         Size 512 512
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

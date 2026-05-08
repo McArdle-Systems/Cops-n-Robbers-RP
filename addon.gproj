@@ -4,6 +4,7 @@ GameProject {
  TITLE "Cops n Robbers RP"
  Dependencies {
   "58D0FB3206B6F859"
+  "64EE818E08AFCF94"
  }
  Configurations {
   GameProjectConfig PC {

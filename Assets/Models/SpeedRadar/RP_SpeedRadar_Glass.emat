@@ -1,5 +1,0 @@
-MatPBRBasicGlass {
- Color 0.01 0.01 0.013 1
- RoughnessScale 0.05
- MetalnessScale 0
-}

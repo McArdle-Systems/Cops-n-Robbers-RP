@@ -1,8 +1,31 @@
 GenericEntity {
  ID "7B4D8A3F2E195D02"
  components {
+  AG0_MFDSlotComponent "{6951140B5374CED2}" {
+   m_AvailablePages {
+    AG0_MFDPageType "{6951140B521C7E0E}" {
+     PageLayoutPath "{6951140EE0F0A001}UI/layouts/MFD_RadarScreen.layout"
+     PageName "Custom"
+     TextWidgets {
+      AG0_MFDTextConfig "{6951140B5B96610B}" {
+       WidgetName "SpeedText"
+       SignalName "IsOccupied"
+       FormatString "RADAR %1"
+      }
+     }
+    }
+   }
+  }
   MeshObject "7B4D8A3F2E195D03" {
    Object "{5E56963F26D15552}Assets/Models/SpeedRadarV2/SpeedRadarScreen.xob"
+   Materials {
+    MaterialAssignClass "{69510A5C5D412C2A}" {
+     SourceMaterial "SpeedRadar_Screen"
+     AssignedMaterial "{06C7951685F08B81}Assets/MFD_PIPMaterial.emat"
+    }
+   }
+  }
+  Hierarchy "7B4D8A3F2E195D04" {
   }
  }
  coords 0 0 0
