@@ -1,15 +1,6 @@
-Vehicle Suburban_police1 : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et" {
- components {
-  RP_CopAudioComponent "{694F2584919577FF}" {
-   Filenames {
-    "{5319CE72BC43437D}Assets/Audio/Radar.acp"
-   }
-  }
-  RP_PoliceVehicleComponent "{694E1EF60B7C49D2}" {
-  }
- }
- coords 3267.245 1.964 2914.296
- angles 0 -125.071 0
+Vehicle Suburban_police : "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/RPSuburban_police.et" {
+ coords 3265.98 2 2913.313
+ angles 0 -128.568 0
 }
 Vehicle CIV_van_1 : "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_cargo_CIV_randomized.et" {
  components {
@@ -18,4 +9,7 @@ Vehicle CIV_van_1 : "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_ca
  }
  coords 3269.052 2.239 2870.135
  angles 0 -62.02 0
+}
+GenericEntity : "{9E591E6A616C89B4}Prefabs/Items/SpeedRadar.et" {
+ coords 3268.416 2 2892.141
 }

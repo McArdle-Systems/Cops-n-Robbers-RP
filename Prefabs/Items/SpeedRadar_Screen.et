@@ -1,0 +1,9 @@
+GenericEntity {
+ ID "7B4D8A3F2E195D02"
+ components {
+  MeshObject "7B4D8A3F2E195D03" {
+   Object "{5E56963F26D15552}Assets/Models/SpeedRadarV2/SpeedRadarScreen.xob"
+  }
+ }
+ coords 0 0 0
+}

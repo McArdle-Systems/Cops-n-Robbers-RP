@@ -124,6 +124,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	protected bool m_bFlashOn;
 	protected float m_fFlashNextToggle;
 
+	// Cached radar visual driver — discovered once per Show() by walking
+	// the cop car's children. Cleared on Hide() so a different cop car
+	// re-resolves on next open.
+	protected RP_SpeedRadarVisualComponent m_RadarVisual;
+
 	override void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
@@ -211,6 +216,9 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		ResetLockState();
 		m_wRoot.SetVisible(true);
 		m_bVisible = true;
+		m_RadarVisual = FindRadarVisual(GetPlayerCopVehicle());
+		PushRadarState(ERP_RadarVisualState.SCANNING);
+		PushRadarSpeedText("—");
 		GetGame().GetCallqueue().CallLater(Tick, (int)(m_fScanIntervalSeconds * 1000), true);
 		Tick();
 	}
@@ -221,6 +229,8 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			m_wRoot.SetVisible(false);
 		GetGame().GetCallqueue().Remove(Tick);
 		StopFlashTick();
+		PushRadarState(ERP_RadarVisualState.OFF);
+		m_RadarVisual = null;
 		m_bVisible = false;
 	}
 
@@ -294,20 +304,25 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					m_sLockedPlate = currentPlate;
 					m_fFlashEndTime = now + m_fFlashDurationSec;
 					m_eSpeedState = ERP_SpeedState.FLASHING;
-					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fTriggerSpeedKmh)));
+					string trigText = string.Format("%1 km/h", Math.Round(m_fTriggerSpeedKmh));
+					SetText("SpeedValue", trigText);
 					SetText("PlateValue", m_sLockedPlate);
 					SetFieldRed("Speed", true);
 					SetFieldRed("Plate", true);
 					StartFlashTick();
 					PlayLockSound(copCar);
+					PushRadarState(ERP_RadarVisualState.FLASHING);
+					PushRadarSpeedText(trigText);
 					break;
 				}
 				if (target)
 				{
-					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(currentSpeedKmh)));
+					string curText = string.Format("%1 km/h", Math.Round(currentSpeedKmh));
+					SetText("SpeedValue", curText);
 					SetText("PlateValue", currentPlate);
 					SetFieldRed("Speed", false);
 					SetFieldRed("Plate", IsPlateFlagged(currentPlate));
+					PushRadarSpeedText(curText);
 				}
 				else
 				{
@@ -315,6 +330,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetText("PlateValue", "—");
 					SetFieldRed("Speed", false);
 					SetFieldRed("Plate", false);
+					PushRadarSpeedText("—");
 				}
 				break;
 			}
@@ -336,8 +352,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					StopFlashTick();
 					SetFieldVisible("Speed", true);
 					SetFieldVisible("Plate", true);
-					SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh)));
+					string peakText = string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh));
+					SetText("SpeedValue", peakText);
 					SetWidgetVisible("LockIndicator", true);
+					PushRadarState(ERP_RadarVisualState.LOCKED);
+					PushRadarSpeedText(peakText);
 				}
 				break;
 			}
@@ -352,7 +371,9 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					if (lockedSpeed > m_fPeakSpeedKmh)
 					{
 						m_fPeakSpeedKmh = lockedSpeed;
-						SetText("SpeedValue", string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh)));
+						string newPeakText = string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh));
+						SetText("SpeedValue", newPeakText);
+						PushRadarSpeedText(newPeakText);
 					}
 				}
 				break;
@@ -500,21 +521,54 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		return phys.GetVelocity().Length() * 3.6;
 	}
 
-	// Plays the lock sound event through the cop car's RP_CopAudioComponent
-	// (which loads the equipment .acp). HUD-only / local — no RPC.
+	// Plays the lock sound event through the radar's RP_CopAudioComponent
+	// (which loads the equipment .acp). The audio component now lives on
+	// the SpeedRadar prop entity rather than the cop car itself, so we
+	// walk the cop car's child hierarchy to find it. HUD-only / local —
+	// no RPC.
 	protected void PlayLockSound(IEntity copCar)
 	{
 		if (m_sLockSoundEvent.IsEmpty() || !copCar)
 			return;
-		RP_CopAudioComponent sc = RP_CopAudioComponent.Cast(copCar.FindComponent(RP_CopAudioComponent));
+		IEntity audioHost;
+		RP_CopAudioComponent sc = FindCopAudio(copCar, audioHost);
 		if (!sc)
 		{
-			Print("[RP_Surveillance] No RP_CopAudioComponent on cop car — radar beep skipped. Add one to the cop vehicle prefab and configure it with the equipment .acp.", LogLevel.WARNING);
+			Print("[RP_Surveillance] No RP_CopAudioComponent found on cop car or its children — radar beep skipped.", LogLevel.WARNING);
 			return;
 		}
 		vector tm[4];
-		copCar.GetTransform(tm);
+		audioHost.GetTransform(tm);
 		sc.SoundEventTransform(m_sLockSoundEvent, tm);
+	}
+
+	// Walks the cop car's hierarchy and returns the first
+	// RP_CopAudioComponent it finds, along with the entity hosting it
+	// (so the sound emits from that entity's transform).
+	protected RP_CopAudioComponent FindCopAudio(IEntity root, out IEntity host)
+	{
+		RP_CopAudioComponent sc = RP_CopAudioComponent.Cast(root.FindComponent(RP_CopAudioComponent));
+		if (sc)
+		{
+			host = root;
+			return sc;
+		}
+		IEntity c = root.GetChildren();
+		while (c)
+		{
+			sc = RP_CopAudioComponent.Cast(c.FindComponent(RP_CopAudioComponent));
+			if (sc)
+			{
+				host = c;
+				return sc;
+			}
+			sc = FindCopAudio(c, host);
+			if (sc)
+				return sc;
+			c = c.GetSibling();
+		}
+		host = null;
+		return null;
 	}
 
 	// POC stub: stand-in plate from the entity's workbench name.
@@ -601,5 +655,56 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		TextWidget tw = TextWidget.Cast(w);
 		if (tw)
 			tw.SetColorInt(color);
+	}
+
+	// Walks the cop car's child hierarchy to find the SpeedRadar prop's
+	// visual driver. The radar is nested in the police vehicle prefab
+	// (typically via a SlotManagerComponent slot), so the component lives
+	// somewhere in the parent's child chain.
+	protected RP_SpeedRadarVisualComponent FindRadarVisual(IEntity copCar)
+	{
+		if (!copCar)
+			return null;
+		IEntity child = copCar.GetChildren();
+		while (child)
+		{
+			RP_SpeedRadarVisualComponent v = RP_SpeedRadarVisualComponent.Cast(child.FindComponent(RP_SpeedRadarVisualComponent));
+			if (v)
+				return v;
+			RP_SpeedRadarVisualComponent inner = FindRadarVisualRecursive(child);
+			if (inner)
+				return inner;
+			child = child.GetSibling();
+		}
+		return null;
+	}
+
+	protected RP_SpeedRadarVisualComponent FindRadarVisualRecursive(IEntity entity)
+	{
+		IEntity child = entity.GetChildren();
+		while (child)
+		{
+			RP_SpeedRadarVisualComponent v = RP_SpeedRadarVisualComponent.Cast(child.FindComponent(RP_SpeedRadarVisualComponent));
+			if (v)
+				return v;
+			RP_SpeedRadarVisualComponent inner = FindRadarVisualRecursive(child);
+			if (inner)
+				return inner;
+			child = child.GetSibling();
+		}
+		return null;
+	}
+
+	protected void PushRadarState(ERP_RadarVisualState state)
+	{
+		if (!m_RadarVisual)
+			return;
+		m_RadarVisual.SetState(state);
+	}
+
+	protected void PushRadarSpeedText(string text)
+	{
+		if (m_RadarVisual)
+			m_RadarVisual.SetSpeedText(text);
 	}
 }

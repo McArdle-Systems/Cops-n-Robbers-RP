@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{46D832B04DBC6B7F}Assets/Models/SpeedRadarV2/Data/SpeedRadar_Glass.emat"
+ Configurations {
+  EMATResourceClass PC {
+  }
+  EMATResourceClass XBOX_ONE : PC {
+  }
+  EMATResourceClass XBOX_SERIES : PC {
+  }
+  EMATResourceClass PS4 : PC {
+  }
+  EMATResourceClass PS5 : PC {
+  }
+  EMATResourceClass HEADLESS : PC {
+  }
+ }
+}
