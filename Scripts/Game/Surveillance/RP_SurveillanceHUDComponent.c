@@ -332,6 +332,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetFieldRed("Plate", false);
 					PushRadarSpeedText("—");
 				}
+				PushRadarHasTarget(target != null);
 				break;
 			}
 
@@ -706,5 +707,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	{
 		if (m_RadarVisual)
 			m_RadarVisual.SetSpeedText(text);
+	}
+
+	protected void PushRadarHasTarget(bool hasTarget)
+	{
+		if (m_RadarVisual)
+			m_RadarVisual.SetHasTarget(hasTarget);
 	}
 }

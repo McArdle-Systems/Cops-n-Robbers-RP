@@ -1,0 +1,7 @@
+MatPBRBasic {
+ Color 0 0.01 0 1
+ Emissive 0 1 0 0
+ EmissiveLV 9
+ RoughnessScale 0.3
+ MetalnessScale 0
+}

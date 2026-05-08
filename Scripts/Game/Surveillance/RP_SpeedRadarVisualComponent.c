@@ -45,10 +45,13 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	[Attribute(desc: "LED child mesh (.xob). Used to identify the LED child by walking children and matching their MeshObject resource — robust against runtime naming differences.", UIWidgets.ResourcePickerThumbnail, params: "xob")]
 	protected ResourceName m_sLEDMeshXob;
 
-	[Attribute(desc: "Material applied to the LED child while the HUD is up.", UIWidgets.ResourcePickerThumbnail, params: "emat")]
+	[Attribute(desc: "Material applied to the LED while a target is being tracked under the limit (red).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
 	protected ResourceName m_sLEDOnMaterial;
 
-	[Attribute(desc: "Material applied to the LED child while the HUD is off (dark/unlit variant).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
+	[Attribute(desc: "Material applied to the LED while the HUD is up but no target is in the cone (green idle indicator).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
+	protected ResourceName m_sLEDIdleMaterial;
+
+	[Attribute(desc: "Material applied to the LED while the HUD is off (dark/unlit variant).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
 	protected ResourceName m_sLEDOffMaterial;
 
 	[Attribute(desc: "Screen child mesh (.xob). Used to identify the Screen child via MeshObject resource match.", UIWidgets.ResourcePickerThumbnail, params: "xob")]
@@ -72,6 +75,12 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	[Attribute(defvalue: "0.18", desc: "Blinky 'on' phase in seconds.")]
 	protected float m_fBlinkyOnSec;
 
+	[Attribute(defvalue: "0.08", desc: "LED rapid-blink 'on' phase during FLASHING/LOCKED (sec).")]
+	protected float m_fLEDFastOnSec;
+
+	[Attribute(defvalue: "0.08", desc: "LED rapid-blink 'off' phase during FLASHING/LOCKED (sec).")]
+	protected float m_fLEDFastOffSec;
+
 	[Attribute(defvalue: "{8C0F3E120000A000}UI/RP_SpeedRadarDisplay.layout", desc: "Layout containing an RTTextureWidget whose contents are rendered onto the screen child's material via $rendertarget.", UIWidgets.ResourcePickerThumbnail, params: "layout")]
 	protected ResourceName m_sDisplayLayoutPath;
 
@@ -94,6 +103,18 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	protected bool m_bBlinkyOn;
 	protected float m_fBlinkyNextToggle;
 
+	// LED blink runtime — only used during FLASHING/LOCKED. SCANNING is
+	// solid (green if no target, red if tracking). OFF is dark.
+	protected bool m_bLEDTickRunning;
+	protected bool m_bLEDPhaseOn;
+	protected float m_fLEDOnSec;
+	protected float m_fLEDOffSec;
+	protected float m_fLEDNextToggle;
+
+	// Whether the cone scan currently has a target. Pushed by the HUD
+	// each Tick. Decides green-vs-red during SCANNING.
+	protected bool m_bHasTarget;
+
 	override void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
@@ -107,6 +128,7 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 		StopBlinkyTick();
 		DespawnBlinky();
 		DestroyDisplay();
+		StopLEDBlink();
 		super.OnDelete(owner);
 	}
 
@@ -140,6 +162,19 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 		if (!m_bChildrenResolved)
 			ResolveChildren();
 		return m_ScreenChild;
+	}
+
+	// Pushed each Tick by the HUD. True when a vehicle is in the cone.
+	// Drives the LED's green-vs-red color during SCANNING.
+	void SetHasTarget(bool hasTarget)
+	{
+		if (m_bHasTarget == hasTarget)
+			return;
+		m_bHasTarget = hasTarget;
+		// Only re-apply if we're actually in a state where the flag
+		// changes the LED visual (SCANNING). FLASHING/LOCKED ignore it.
+		if (m_eState == ERP_RadarVisualState.SCANNING)
+			ApplyMaterialForState();
 	}
 
 	protected void ResolveChildren()
@@ -259,27 +294,80 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 
 	protected void ApplyMaterialForState()
 	{
-		ResourceName ledMat;
+		// Screen — solid on/off per HUD state. The radar's "lit" look comes
+		// purely from the screen material's emissive in this baseline.
 		ResourceName screenMat;
+		if (m_eState == ERP_RadarVisualState.OFF)
+			screenMat = m_sScreenOffMaterial;
+		else
+			screenMat = m_sScreenOnMaterial;
+		ApplyMaterial(m_ScreenChild, screenMat);
+
+		// LED — state-driven behavior:
+		//   OFF                       -> dark, no blink
+		//   SCANNING + no target      -> solid green (idle)
+		//   SCANNING + tracking       -> solid red
+		//   FLASHING / LOCKED         -> rapid red blink (over-limit)
 		switch (m_eState)
 		{
 			case ERP_RadarVisualState.OFF:
-				ledMat = m_sLEDOffMaterial;
-				screenMat = m_sScreenOffMaterial;
+				StopLEDBlink();
+				ApplyMaterial(m_LEDChild, m_sLEDOffMaterial);
 				break;
 			case ERP_RadarVisualState.SCANNING:
+				StopLEDBlink();
+				if (m_bHasTarget)
+					ApplyMaterial(m_LEDChild, m_sLEDOnMaterial);
+				else
+					ApplyMaterial(m_LEDChild, m_sLEDIdleMaterial);
+				break;
 			case ERP_RadarVisualState.FLASHING:
 			case ERP_RadarVisualState.LOCKED:
-				// The "on" screen material carries the BCRMap = $rendertarget
-				// reference, so we use it for every powered state. Real radars
-				// are continuously lit while in use; the LOCKED-vs-other
-				// distinction shows up only in the rendered text content.
-				ledMat = m_sLEDOnMaterial;
-				screenMat = m_sScreenOnMaterial;
+				StartLEDBlink(m_fLEDFastOnSec, m_fLEDFastOffSec);
 				break;
 		}
-		ApplyMaterial(m_LEDChild, ledMat);
-		ApplyMaterial(m_ScreenChild, screenMat);
+	}
+
+	// Idempotent: if already running, just updates the rate so a state
+	// transition (slow -> fast) takes effect on the next phase toggle
+	// without restarting the cycle.
+	protected void StartLEDBlink(float onSec, float offSec)
+	{
+		m_fLEDOnSec = onSec;
+		m_fLEDOffSec = offSec;
+		if (m_bLEDTickRunning)
+			return;
+		m_bLEDPhaseOn = true;
+		ApplyMaterial(m_LEDChild, m_sLEDOnMaterial);
+		m_fLEDNextToggle = GetWorldTimeSeconds() + m_fLEDOnSec;
+		GetGame().GetCallqueue().CallLater(LEDTick, 30, true);
+		m_bLEDTickRunning = true;
+	}
+
+	protected void StopLEDBlink()
+	{
+		if (!m_bLEDTickRunning)
+			return;
+		GetGame().GetCallqueue().Remove(LEDTick);
+		m_bLEDTickRunning = false;
+	}
+
+	protected void LEDTick()
+	{
+		float now = GetWorldTimeSeconds();
+		if (now < m_fLEDNextToggle)
+			return;
+		m_bLEDPhaseOn = !m_bLEDPhaseOn;
+		if (m_bLEDPhaseOn)
+		{
+			ApplyMaterial(m_LEDChild, m_sLEDOnMaterial);
+			m_fLEDNextToggle = now + m_fLEDOnSec;
+		}
+		else
+		{
+			ApplyMaterial(m_LEDChild, m_sLEDOffMaterial);
+			m_fLEDNextToggle = now + m_fLEDOffSec;
+		}
 	}
 
 	protected void ApplyMaterial(IEntity ent, ResourceName mat)
