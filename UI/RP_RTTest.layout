@@ -1,0 +1,44 @@
+FrameWidgetClass {
+ Name "RTTestRoot"
+ {
+  RTTextureWidgetClass "{8C0F3E120000A510}" {
+   Name "RTSurface"
+   Slot FrameWidgetSlot "{8C0F3E120000A511}" {
+    OffsetLeft 0
+    OffsetTop 0
+    SizeX 512
+    OffsetRight -512
+    SizeY 256
+    OffsetBottom -256
+   }
+   {
+    ImageWidgetClass "{8C0F3E120000A516}" {
+     Name "RTBg"
+     Slot FrameWidgetSlot "{8C0F3E120000A517}" {
+      OffsetLeft 0
+      OffsetTop 0
+      SizeX 512
+      OffsetRight -512
+      SizeY 256
+      OffsetBottom -256
+     }
+     Color 1 0 1 1
+    }
+    TextWidgetClass "{8C0F3E120000A514}" {
+     Name "RTText"
+     Slot FrameWidgetSlot "{8C0F3E120000A515}" {
+      OffsetLeft 16
+      OffsetTop 80
+      SizeX 480
+      OffsetRight -496
+      SizeY 100
+      OffsetBottom -180
+     }
+     Color 1 1 1 1
+     Text "RT TEST INIT"
+     "Font Size" 80
+    }
+   }
+  }
+ }
+}

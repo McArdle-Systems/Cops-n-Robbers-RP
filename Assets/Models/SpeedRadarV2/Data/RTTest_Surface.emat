@@ -1,0 +1,9 @@
+MatPBRBasic {
+ Color 1 1 1 1
+ Emissive 1 1 1 1
+ EmissiveLV 5
+ ApplyAlbedoToEmissive 1
+ RoughnessScale 0.2
+ MetalnessScale 0
+ BCRMap "$rendertarget"
+}

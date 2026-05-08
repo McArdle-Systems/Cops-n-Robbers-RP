@@ -1,0 +1,19 @@
+GenericEntity {
+ ID "8C0F3E120000A530"
+ components {
+  RP_RTTestComponent "8C0F3E120000A531" {
+  }
+  MeshObject "8C0F3E120000A532" {
+   Object "{5E56963F26D15552}Assets/Models/SpeedRadarV2/SpeedRadarScreen.xob"
+   Materials {
+    MaterialAssignClass "8C0F3E120000A533" {
+     SourceMaterial "SpeedRadar_Screen"
+     AssignedMaterial "{8C0F3E120000A520}Assets/Models/SpeedRadarV2/Data/RTTest_Surface.emat"
+    }
+   }
+  }
+  Hierarchy "8C0F3E120000A534" {
+  }
+ }
+ coords 0 0 0
+}

@@ -1,0 +1,19 @@
+GenericEntity {
+ ID "69513ED6B2A5BEF3"
+ components {
+  RP_RTTestComponent "{69513ED6B2A5BEF4}" {
+  }
+  MeshObject "{69513ED6C89E4C6C}" {
+   Object "{04BB1C7484833E82}Assets/Models/TestPlane/TestPlane.xob"
+   Materials {
+    MaterialAssignClass "{69513ED6B2A5BEF5}" {
+     SourceMaterial "DefaultGeneratedMaterial"
+     AssignedMaterial "{8C0F3E120000A520}Assets/Models/SpeedRadarV2/Data/RTTest_Surface.emat"
+    }
+   }
+  }
+  Hierarchy "{69513ED6B2A5BEF6}" {
+  }
+ }
+ coords 3263.4 2 2902.118
+}

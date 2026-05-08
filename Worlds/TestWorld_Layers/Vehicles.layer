@@ -10,3 +10,7 @@ Vehicle CIV_van_1 : "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_ca
  coords 3269.052 2.239 2870.135
  angles 0 -62.02 0
 }
+GenericEntity : "{F0C174162EF4580A}Prefabs/Items/RP_TestPlane.et" {
+ coords 3265.383 3.11 2909.056
+ angles 0 53.97 0
+}
