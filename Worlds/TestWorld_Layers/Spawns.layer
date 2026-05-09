@@ -18,7 +18,7 @@ $grp GenericEntity {
  }
 }
 SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
- coords 3264.421 2.368 2908.24
+ coords 3265.752 2.368 2906.8
  angles 0 46.198 0
  m_sFaction "Police"
 }

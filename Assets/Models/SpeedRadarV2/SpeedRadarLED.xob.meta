@@ -5,7 +5,7 @@ MetaFileClass {
    MaterialAssigns {
     MaterialAssignClass "{69503253DCE2522F}" {
      SourceMaterial "SpeedRadar_LED"
-     AssignedMaterial "{A1C9781CFEFA3B29}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED.emat"
+     AssignedMaterial "{A1C9781CFEFA3B29}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Red.emat"
     }
    }
    MeshParams {

@@ -76,6 +76,22 @@ def add_box(name, size, location, material, rotation=(0, 0, 0)):
     created_parts.append(obj)
     return obj
 
+def add_plane_facing_y(name, width, height, location, material):
+    """Plane with normal facing +Y (driver direction), default 0-1 UVs.
+    width = local X extent, height = local Z extent after the rotation is baked.
+    Use this for surfaces that need a clean rendertarget binding."""
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.mesh.primitive_plane_add(size=1, location=location)
+    obj = bpy.context.active_object
+    obj.name = name
+    obj.scale = (width, height, 1)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    obj.rotation_euler = (-1.5708, 0, 0)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    assign_material(obj, material)
+    created_parts.append(obj)
+    return obj
+
 def add_cylinder(name, radius, depth, location, material, rotation=(0, 0, 0)):
     bpy.ops.object.select_all(action='DESELECT')
     bpy.ops.mesh.primitive_cylinder_add(
@@ -107,9 +123,12 @@ housing = add_box("SpeedRadar_Housing", (0.16, 0.06, 0.05),
                   (0, 0, 0.062), mat_plastic)
 bevel_object(housing, 0.004, 2)
 
-# Driver-facing screen (+Y)
-add_box("SpeedRadar_Screen", (0.10, 0.001, 0.032),
-        (0, 0.031, 0.065), mat_screen)
+# Driver-facing screen (+Y) — plane (not box) so the front face has clean
+# 0-1 UVs for rendertarget binding. Cube primitives give each face a small
+# subregion of UV space, which causes the bound RT texture to render
+# zoomed-in / rotated on the visible face.
+add_plane_facing_y("SpeedRadar_Screen", 0.10, 0.032,
+                   (0, 0.031, 0.065), mat_screen)
 
 # Antenna points forward (-Y)
 add_cylinder("SpeedRadar_AntennaBody", 0.022, 0.04,

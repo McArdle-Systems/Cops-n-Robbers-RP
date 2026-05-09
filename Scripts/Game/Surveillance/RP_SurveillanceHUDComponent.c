@@ -106,6 +106,9 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "SOUND_RADAR_BEEPING", desc: "Sound event triggered the moment LOCK engages. Empty = silent. Length is controlled on the audio side (BankWorks event) since the script API has no StopSound.")]
 	protected string m_sLockSoundEvent;
 
+	[Attribute(defvalue: "radar_speed_kmh", desc: "Vehicle signal name updated each Tick with the current radar reading. Bind this same name in the radar screen's AG0_MFDTextConfig.SignalName so the MFD framework substitutes it into the FormatString.")]
+	protected string m_sSpeedSignalName;
+
 	protected Widget m_wRoot;
 	protected bool m_bVisible;
 	protected bool m_bActionRegistered;
@@ -128,6 +131,14 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	// the cop car's children. Cleared on Hide() so a different cop car
 	// re-resolves on next open.
 	protected RP_SpeedRadarVisualComponent m_RadarVisual;
+
+	// Cached signal manager + signal index for the cop vehicle's speed
+	// readout. The radar screen's AG0_MFDTextConfig binds the same
+	// signal name so the framework substitutes the value into its
+	// FormatString. Cleared on Hide() so re-Show on a different cop car
+	// re-resolves.
+	protected SignalsManagerComponent m_SignalsMgr;
+	protected int m_iSpeedSignalIdx = -1;
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -216,9 +227,12 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		ResetLockState();
 		m_wRoot.SetVisible(true);
 		m_bVisible = true;
-		m_RadarVisual = FindRadarVisual(GetPlayerCopVehicle());
+		IEntity copCar = GetPlayerCopVehicle();
+		m_RadarVisual = FindRadarVisual(copCar);
+		EnsureSpeedSignal(copCar);
 		PushRadarState(ERP_RadarVisualState.SCANNING);
 		PushRadarSpeedText("—");
+		PushSpeedSignal(0);
 		GetGame().GetCallqueue().CallLater(Tick, (int)(m_fScanIntervalSeconds * 1000), true);
 		Tick();
 	}
@@ -229,8 +243,12 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			m_wRoot.SetVisible(false);
 		GetGame().GetCallqueue().Remove(Tick);
 		StopFlashTick();
+		// Zero the signal so the screen reads 0 km/h while powered off.
+		PushSpeedSignal(0);
 		PushRadarState(ERP_RadarVisualState.OFF);
 		m_RadarVisual = null;
+		m_SignalsMgr = null;
+		m_iSpeedSignalIdx = -1;
 		m_bVisible = false;
 	}
 
@@ -313,6 +331,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					PlayLockSound(copCar);
 					PushRadarState(ERP_RadarVisualState.FLASHING);
 					PushRadarSpeedText(trigText);
+					PushSpeedSignal(m_fTriggerSpeedKmh);
 					break;
 				}
 				if (target)
@@ -323,6 +342,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetFieldRed("Speed", false);
 					SetFieldRed("Plate", IsPlateFlagged(currentPlate));
 					PushRadarSpeedText(curText);
+					PushSpeedSignal(currentSpeedKmh);
 				}
 				else
 				{
@@ -331,6 +351,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetFieldRed("Speed", false);
 					SetFieldRed("Plate", false);
 					PushRadarSpeedText("—");
+					PushSpeedSignal(0);
 				}
 				PushRadarHasTarget(target != null);
 				break;
@@ -358,6 +379,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetWidgetVisible("LockIndicator", true);
 					PushRadarState(ERP_RadarVisualState.LOCKED);
 					PushRadarSpeedText(peakText);
+					PushSpeedSignal(m_fPeakSpeedKmh);
 				}
 				break;
 			}
@@ -375,6 +397,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 						string newPeakText = string.Format("%1 km/h", Math.Round(m_fPeakSpeedKmh));
 						SetText("SpeedValue", newPeakText);
 						PushRadarSpeedText(newPeakText);
+						PushSpeedSignal(m_fPeakSpeedKmh);
 					}
 				}
 				break;
@@ -707,6 +730,37 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	{
 		if (m_RadarVisual)
 			m_RadarVisual.SetSpeedText(text);
+	}
+
+	// Resolves the cop vehicle's SignalsManagerComponent and registers
+	// (or finds) the speed signal index. Idempotent — re-invoking after
+	// resolution is a no-op. Cleared on Hide() so re-Show on a different
+	// cop car re-resolves.
+	protected void EnsureSpeedSignal(IEntity copCar)
+	{
+		if (m_iSpeedSignalIdx >= 0 && m_SignalsMgr)
+			return;
+		if (!copCar)
+			return;
+		m_SignalsMgr = SignalsManagerComponent.Cast(copCar.FindComponent(SignalsManagerComponent));
+		if (!m_SignalsMgr)
+		{
+			Print(string.Format("[RP_Surveillance] Cop car has no SignalsManagerComponent — radar screen text will not update."), LogLevel.WARNING);
+			return;
+		}
+		// MP variant — AG0 MFD framework reads via AddOrFindMPSignal so the
+		// value replicates to passenger clients. AddOrFindSignal returns an
+		// index into a separate local-only pool that the framework does
+		// not see, so writes there silently do nothing.
+		// Args: (name, valueThreshold, blendSpeed (0 = instant), initialValue)
+		m_iSpeedSignalIdx = m_SignalsMgr.AddOrFindMPSignal(m_sSpeedSignalName, 0.5, 0, 0);
+	}
+
+	protected void PushSpeedSignal(float kmh)
+	{
+		if (!m_SignalsMgr || m_iSpeedSignalIdx < 0)
+			return;
+		m_SignalsMgr.SetSignalValue(m_iSpeedSignalIdx, kmh);
 	}
 
 	protected void PushRadarHasTarget(bool hasTarget)

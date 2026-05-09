@@ -14,9 +14,6 @@ GenericEntity {
    m_sLEDOnMaterial "{A1C9781CFEFA3B29}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Red.emat"
    m_sLEDIdleMaterial "{5BA0B9A29A796864}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Green.emat"
    m_sLEDOffMaterial "{195BFF99B5195C3A}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Off.emat"
-   m_sScreenMeshXob "{5E56963F26D15552}Assets/Models/SpeedRadarV2/SpeedRadarScreen.xob"
-   m_sScreenOnMaterial "{1A548D04B07DD5F3}Assets/Models/SpeedRadarV2/Data/SpeedRadar_Screen.emat"
-   m_sScreenOffMaterial "{D2DB2083ED83D533}Assets/Models/SpeedRadarV2/Data/SpeedRadar_Screen_Off.emat"
    m_sBlinkyPrefab "{6F8B2A7C5D193E04}Prefabs/Effects/Lights/RP_SpeedRadarBlinky.et"
    m_vBlinkyOffset 0 0.1 0
   }
@@ -25,10 +22,6 @@ GenericEntity {
     EntitySlotInfo LED {
      Offset 0 0 0
      Prefab "{7B4D8A3F2E195C01}Prefabs/Items/SpeedRadar_LED.et"
-    }
-    EntitySlotInfo Screen {
-     Offset 0 0 0
-     Prefab "{7B4D8A3F2E195D01}Prefabs/Items/SpeedRadar_Screen.et"
     }
    }
   }

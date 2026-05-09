@@ -1,30 +1,29 @@
 /**
  * RP_SpeedRadarVisualComponent
  *
- * Drives the physical SpeedRadar prop's visual elements (LED, screen,
- * blinky beacon) to mirror the surveillance HUD state. Attached to the
- * SpeedRadar entity inside the police vehicle.
+ * Drives the physical SpeedRadar prop's visual elements (LED + blinky
+ * beacon) and toggles power on the AG0 MFD slot that drives the screen.
  *
- * Driven by RP_SurveillanceHUDComponent — the HUD pushes state
- * transitions in via SetState() so the prop visuals stay in lock-step
- * with the on-screen overlay (both toggle on the same ] press).
+ * The screen is no longer a child of this radar entity — it lives as a
+ * sibling slot on the parent vehicle so the AG0 MFD framework's parent
+ * walk (Screen → Vehicle) finds the AG0_MFDManagerComponent in one hop
+ * instead of going through this radar prop's slot indirection.
+ *
+ * Driven by RP_SurveillanceHUDComponent — the HUD pushes state via
+ * SetState() so the prop visuals stay in lock-step with the on-screen
+ * overlay.
  *
  * Visual mapping:
- *   OFF       : LED off, Screen off, blinky despawned
- *   SCANNING  : LED on (steady), Screen off, blinky despawned
- *   FLASHING  : LED on, Screen off, blinky pulsing
- *   LOCKED    : LED on, Screen on, blinky solid
+ *   OFF       : LED off, Screen MFD off, blinky despawned
+ *   SCANNING  : LED on (steady, green idle / red on target), Screen MFD on, blinky despawned
+ *   FLASHING  : LED rapid blink, Screen MFD on, blinky pulsing
+ *   LOCKED    : LED rapid blink, Screen MFD on, blinky solid
  *
- * Architecture:
- *   - LED and Screen are child entities under the radar prefab, each
- *     with its own MeshObject containing a single material slot. We
- *     swap that material at runtime via SCR_Global.SetMaterial(child,
- *     mat, false). Per-slot material swap on the parent radar's
- *     multi-slot MeshObject is not exposed in the public script API,
- *     which is why those elements live as separate child entities.
- *   - Blinky beacon is a PointLight prefab spawned/despawned per state,
- *     since it's a real light contribution rather than a material
- *     state.
+ * MFD control:
+ *   Screen on/off is a single TogglePowerAction call on slot 0 of the
+ *   parent vehicle's AG0_MFDManagerComponent. Idempotent — only flips
+ *   when the desired state differs from IsMFDOn(0). Server-authoritative;
+ *   replication carries state to all clients.
  */
 
 enum ERP_RadarVisualState
@@ -35,14 +34,14 @@ enum ERP_RadarVisualState
 	LOCKED,
 }
 
-[ComponentEditorProps(category: "RP/Surveillance", description: "Visual driver for the SpeedRadar prop. Swaps materials on the LED and Screen child entities and spawns a blinky beacon child light per HUD state. Attach to the SpeedRadar entity (usually nested as a child of a police vehicle).")]
+[ComponentEditorProps(category: "RP/Surveillance", description: "Visual driver for the SpeedRadar prop. Swaps LED material per state, spawns/despawns the blinky beacon, and toggles the parent vehicle's AG0 MFD slot 0 on/off in lock-step with the surveillance HUD.")]
 class RP_SpeedRadarVisualComponentClass : ScriptComponentClass
 {
 }
 
 class RP_SpeedRadarVisualComponent : ScriptComponent
 {
-	[Attribute(desc: "LED child mesh (.xob). Used to identify the LED child by walking children and matching their MeshObject resource — robust against runtime naming differences.", UIWidgets.ResourcePickerThumbnail, params: "xob")]
+	[Attribute(desc: "LED child mesh (.xob). Used to identify the LED child by walking children and matching their MeshObject resource.", UIWidgets.ResourcePickerThumbnail, params: "xob")]
 	protected ResourceName m_sLEDMeshXob;
 
 	[Attribute(desc: "Material applied to the LED while a target is being tracked under the limit (red).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
@@ -53,15 +52,6 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 
 	[Attribute(desc: "Material applied to the LED while the HUD is off (dark/unlit variant).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
 	protected ResourceName m_sLEDOffMaterial;
-
-	[Attribute(desc: "Screen child mesh (.xob). Used to identify the Screen child via MeshObject resource match.", UIWidgets.ResourcePickerThumbnail, params: "xob")]
-	protected ResourceName m_sScreenMeshXob;
-
-	[Attribute(desc: "Material applied to the Screen child during LOCKED state (lit, e.g. red).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
-	protected ResourceName m_sScreenOnMaterial;
-
-	[Attribute(desc: "Material applied to the Screen child while not LOCKED (dark/unlit variant).", UIWidgets.ResourcePickerThumbnail, params: "emat")]
-	protected ResourceName m_sScreenOffMaterial;
 
 	[Attribute(desc: "Light prefab spawned as the blinky beacon (pulses during FLASHING, solid during LOCKED).", UIWidgets.ResourcePickerThumbnail, params: "et")]
 	protected ResourceName m_sBlinkyPrefab;
@@ -81,21 +71,13 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	[Attribute(defvalue: "0.08", desc: "LED rapid-blink 'off' phase during FLASHING/LOCKED (sec).")]
 	protected float m_fLEDFastOffSec;
 
-	[Attribute(defvalue: "{8C0F3E120000A000}UI/RP_SpeedRadarDisplay.layout", desc: "Layout containing an RTTextureWidget whose contents are rendered onto the screen child's material via $rendertarget.", UIWidgets.ResourcePickerThumbnail, params: "layout")]
-	protected ResourceName m_sDisplayLayoutPath;
+	[Attribute(defvalue: "0", desc: "MFD slot index on the parent vehicle to toggle for this radar's screen (0 = first registered slot).")]
+	protected int m_iMFDSlotIndex;
 
 	protected ERP_RadarVisualState m_eState = ERP_RadarVisualState.OFF;
 	protected IEntity m_LEDChild;
-	protected IEntity m_ScreenChild;
 	protected IEntity m_BlinkyLight;
 
-	// Render-target widget tree: the RTTextureWidget at the root of the
-	// layout becomes the entity's $rendertarget once SetRenderTarget()
-	// is called — its TextWidget child is what actually renders onto
-	// the screen child's material.
-	protected Widget m_wDisplayRoot;
-	protected RTTextureWidget m_wRTSurface;
-	protected TextWidget m_wSpeedText;
 	protected string m_sSpeedText = "—";
 
 	protected bool m_bChildrenResolved;
@@ -115,6 +97,11 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	// each Tick. Decides green-vs-red during SCANNING.
 	protected bool m_bHasTarget;
 
+	// Cached parent-vehicle AG0 MFD manager. Resolved lazily on first
+	// state transition (the radar is spawned as a slot child, so the
+	// vehicle is GetOwner().GetParent() at that point).
+	protected AG0_MFDManagerComponent m_MFDManager;
+
 	override void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
@@ -127,19 +114,18 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	{
 		StopBlinkyTick();
 		DespawnBlinky();
-		DestroyDisplay();
 		StopLEDBlink();
 		super.OnDelete(owner);
 	}
 
 	// Pushed by the HUD each Tick — value (or "—") to render on the
-	// physical screen surface. The text is drawn whenever the radar is
-	// not OFF; Color is left to the layout's default styling.
+	// physical screen surface. Currently a no-op stub: the AG0 MFD
+	// framework owns the screen contents via its layout/page/text-widget
+	// config. Wire this through a framework data feed (signals or a
+	// custom MFD instance hook) once that integration is in.
 	void SetSpeedText(string text)
 	{
 		m_sSpeedText = text;
-		if (m_wSpeedText)
-			m_wSpeedText.SetText(m_sSpeedText);
 	}
 
 	void SetState(ERP_RadarVisualState state)
@@ -153,15 +139,6 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	ERP_RadarVisualState GetState()
 	{
 		return m_eState;
-	}
-
-	// Exposed so the HUD component can grab the screen child directly
-	// and bind its own RTTextureWidget to it via SetRenderTarget.
-	IEntity GetScreenChild()
-	{
-		if (!m_bChildrenResolved)
-			ResolveChildren();
-		return m_ScreenChild;
 	}
 
 	// Pushed each Tick by the HUD. True when a vehicle is in the cone.
@@ -186,13 +163,9 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 			return;
 		if (!m_sLEDMeshXob.IsEmpty())
 			m_LEDChild = FindChildByMesh(owner, m_sLEDMeshXob);
-		if (!m_sScreenMeshXob.IsEmpty())
-			m_ScreenChild = FindChildByMesh(owner, m_sScreenMeshXob);
 		m_bChildrenResolved = true;
 		if (!m_LEDChild)
 			Print("[RP_SpeedRadarVisual] LED child not found under radar — LED swap will be skipped.", LogLevel.WARNING);
-		if (!m_ScreenChild)
-			Print("[RP_SpeedRadarVisual] Screen child not found under radar — Screen swap will be skipped.", LogLevel.WARNING);
 		// Apply initial OFF visuals so radar isn't lit before HUD opens.
 		ApplyMaterialForState();
 	}
@@ -224,85 +197,47 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 		ApplyDisplayForState();
 	}
 
+	// Toggles the parent vehicle's AG0 MFD slot to match the current
+	// radar state — on for any non-OFF state, off for OFF. Idempotent
+	// (compares wanted vs. IsMFDOn before flipping). Server-only;
+	// replication carries state to clients.
 	protected void ApplyDisplayForState()
 	{
-		if (m_eState == ERP_RadarVisualState.OFF)
-		{
-			DestroyDisplay();
+		AG0_MFDManagerComponent mgr = FindMFDManager();
+		if (!mgr)
 			return;
-		}
-		EnsureDisplaySpawned();
+		bool wantOn = (m_eState != ERP_RadarVisualState.OFF);
+		bool isOn = mgr.IsMFDOn(m_iMFDSlotIndex);
+		if (wantOn == isOn)
+			return;
+		if (!Replication.IsServer())
+			return;
+		mgr.TogglePowerAction(m_iMFDSlotIndex);
 	}
 
-	// Builds the RT widget tree once and binds the RTTextureWidget to
-	// the screen child via SetRenderTarget. Once bound, anything drawn
-	// inside the RT widget (the TextWidget) is exposed to the screen
-	// child's material as $rendertarget. The screen .emat must be
-	// authored in Workbench to reference $rendertarget on its emissive
-	// or color map for the text to be visible on the surface.
-	protected void EnsureDisplaySpawned()
+	protected AG0_MFDManagerComponent FindMFDManager()
 	{
-		if (m_wDisplayRoot)
-			return;
-		if (m_sDisplayLayoutPath.IsEmpty() || !m_ScreenChild)
-			return;
-		WorkspaceWidget ws = GetGame().GetWorkspace();
-		if (!ws)
-			return;
-		m_wDisplayRoot = ws.CreateWidgets(m_sDisplayLayoutPath);
-		if (!m_wDisplayRoot)
+		if (m_MFDManager)
+			return m_MFDManager;
+		IEntity owner = GetOwner();
+		if (!owner)
+			return null;
+		IEntity current = owner.GetParent();
+		while (current)
 		{
-			Print(string.Format("[RP_SpeedRadarVisual] Layout failed to load: %1", m_sDisplayLayoutPath), LogLevel.ERROR);
-			return;
+			AG0_MFDManagerComponent mgr = AG0_MFDManagerComponent.Cast(current.FindComponent(AG0_MFDManagerComponent));
+			if (mgr)
+			{
+				m_MFDManager = mgr;
+				return mgr;
+			}
+			current = current.GetParent();
 		}
-
-		Widget rt = m_wDisplayRoot.FindAnyWidget("RTSurface");
-		m_wRTSurface = RTTextureWidget.Cast(rt);
-		if (!m_wRTSurface)
-		{
-			Print("[RP_SpeedRadarVisual] RTSurface widget not found — display will be inert.", LogLevel.ERROR);
-			return;
-		}
-		// Bind the RT widget's contents as $rendertarget on the screen
-		// child entity. The screen .emat references it via BCRMap so
-		// the rendered widget appears as the surface's base color.
-		m_wRTSurface.SetRenderTarget(m_ScreenChild);
-
-		Widget t = m_wDisplayRoot.FindAnyWidget("SpeedText");
-		m_wSpeedText = TextWidget.Cast(t);
-		if (m_wSpeedText)
-			m_wSpeedText.SetText(m_sSpeedText);
-
-		// Force a refresh so the RT widget actually renders its children
-		// to the texture. Without this, the texture can stay empty even
-		// after SetRenderTarget binds it to the entity.
-		m_wDisplayRoot.Update();
-		m_wRTSurface.Update();
-	}
-
-	protected void DestroyDisplay()
-	{
-		if (m_wRTSurface && m_ScreenChild)
-			m_wRTSurface.RemoveRenderTarget(m_ScreenChild);
-		m_wRTSurface = null;
-		if (!m_wDisplayRoot)
-			return;
-		m_wDisplayRoot.RemoveFromHierarchy();
-		m_wDisplayRoot = null;
-		m_wSpeedText = null;
+		return null;
 	}
 
 	protected void ApplyMaterialForState()
 	{
-		// Screen — solid on/off per HUD state. The radar's "lit" look comes
-		// purely from the screen material's emissive in this baseline.
-		ResourceName screenMat;
-		if (m_eState == ERP_RadarVisualState.OFF)
-			screenMat = m_sScreenOffMaterial;
-		else
-			screenMat = m_sScreenOnMaterial;
-		ApplyMaterial(m_ScreenChild, screenMat);
-
 		// LED — state-driven behavior:
 		//   OFF                       -> dark, no blink
 		//   SCANNING + no target      -> solid green (idle)
