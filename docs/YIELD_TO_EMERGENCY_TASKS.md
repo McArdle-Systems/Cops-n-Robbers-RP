@@ -167,7 +167,7 @@ State transitions:
 | AI remains stopped while cop sits behind with lights on | ✅ Qualitatively verified |
 | AI resumes within 6s of cop clearing (lights off OR cop > 60m away) | ✅ Qualitatively verified (refresh-based release, ~0.75s) |
 | No script errors across 10 trigger/clear cycles | ✅ Qualitatively verified |
-| Multiple loop vehicles in the bubble pull over independently | ⏳ Test setup has only one civilian in the loop; per-group state means independence is structurally guaranteed but unmeasured |
+| Multiple loop vehicles in the bubble pull over independently | ✅ Qualitatively verified — multiple vehicles in the cone all stopped and resumed independently as expected |
 | Lights off → never triggers | ✅ Qualitatively verified |
 | Bail recovery: driver re-boards via prepended GetIn waypoint | ✅ Qualitatively verified once an off-road snap forced a bail |
 | Re-yield after bail-recovery: driver re-yields naturally if still in bubble after re-boarding | ✅ Qualitatively verified |
