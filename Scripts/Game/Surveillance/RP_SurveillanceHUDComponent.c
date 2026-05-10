@@ -116,6 +116,9 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "50.0", desc: "Cone range in meters.")]
 	protected float m_fConeRangeMeters;
 
+	[Attribute(defvalue: "0", desc: "Attach the highlight light prefab to vehicles the radar is currently tracking. Off by default — the on-screen SPEED + PLATE readout is the primary indicator. Flip on if you want the floating beacon back.")]
+	protected bool m_bEnableVehicleHighlight;
+
 	[Attribute(defvalue: "0.25", desc: "Scan interval in seconds. Drives the cone scan, the in-cop-vehicle gate check, and the speed-lock state machine.")]
 	protected float m_fScanIntervalSeconds;
 
@@ -329,9 +332,13 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 
 			// Promote into the highlight registry — refreshes lifetime so the
 			// light stays attached while the vehicle remains in the cone.
-			RP_VehicleHighlightComponent hl = RP_VehicleHighlightComponent.GetInstance();
-			if (hl)
-				hl.Highlight(target);
+			// Gated by m_bEnableVehicleHighlight; off by default.
+			if (m_bEnableVehicleHighlight)
+			{
+				RP_VehicleHighlightComponent hl = RP_VehicleHighlightComponent.GetInstance();
+				if (hl)
+					hl.Highlight(target);
+			}
 		}
 
 		float now = GetWorldTimeSeconds();
@@ -625,6 +632,8 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 
 	// POC stub: stand-in plate from the entity's workbench name.
 	// Replace with a real plate registry once we add one.
+	// Reads the entity name (set by RP_TrafficLoopComponent.SetName at
+	// spawn for pool vehicles; workbench-authored for everything else).
 	protected string GetVehiclePlate(IEntity vehicle)
 	{
 		string name = vehicle.GetName();

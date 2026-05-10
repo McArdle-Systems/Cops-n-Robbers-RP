@@ -7,11 +7,3 @@ Vehicle Suburban_police : "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/R
  coords 3265.98 2 2913.313
  angles 0 -128.568 0
 }
-Vehicle CIV_van_1 : "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_cargo_CIV_randomized.et" {
- components {
-  RP_TrafficMarkerComponent "{694E1EF6E6DBA1F3}" {
-  }
- }
- coords 3269.052 2.239 2870.135
- angles 0 -62.02 0
-}

@@ -59,10 +59,15 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
   }
   RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
    m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
-   m_fSpeedLimitKmh 30
+   m_fSpeedLimitKmh 40
   }
   RP_TrafficLoopComponent "{694E1EF5FFBE5B61}" {
-   m_sCrewGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+   m_aSpawnConfigs {
+    RP_TrafficSpawnConfig "{69544423D9636B9F}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{C7CE8044B5E301F5}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_transport_CIV_randomized.et"
+    }
+   }
    m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
   }
   RP_VehicleHighlightComponent "{694E1EF60A20F900}" {

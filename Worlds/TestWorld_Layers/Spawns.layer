@@ -1,24 +1,20 @@
-$grp GenericEntity {
- SpawnPoint_Police {
+$grp SCR_SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
+ SpawnPoint_CIV {
   components {
-   RP_DispatchSpawnPointComponent "{69472525261278C6}" {
-    m_sName "SpawnPoint_Police"
-   }
-  }
-  coords 3271.658 2.477 2907.566
-  angles 0 -122.817 0
- }
- SpawnPoint_Civ_Van_1 {
-  components {
-   RP_TrafficMarkerComponent "{694E1EF6E2D93B00}" {
+   RP_TrafficMarkerComponent "{695444238C58FE5B}" {
     m_eType CREW_SPAWN
    }
   }
-  coords 3266.425 2.355 2867.885
+  coords 3280.465 2.499 2885.998
+  angles 0 -146.039 0
+  m_sFaction "CIV"
  }
-}
-SCR_SpawnPoint SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et" {
- coords 3265.752 2.368 2906.8
- angles 0 46.198 0
- m_sFaction "Police"
+ SpawnPoint_Police {
+  components {
+   RP_DispatchSpawnPointComponent "{695444DF0D8BEDB0}" {
+   }
+  }
+  coords 3268.713 2 2909.365
+  m_sFaction "Police"
+ }
 }
