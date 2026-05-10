@@ -54,6 +54,8 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
    m_sGetInWaypointPrefab "{712F4795CF8B91C7}Prefabs/AI/Waypoints/AIWaypoint_GetIn.et"
    m_sGetOutWaypointPrefab "{C40316EE26846CAB}Prefabs/AI/Waypoints/AIWaypoint_GetOut.et"
   }
+  RP_EmergencyYieldComponent "{6954445E52367962}" {
+  }
   RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
    m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
    m_fSpeedLimitKmh 30

@@ -51,13 +51,41 @@ enum ERP_SpeedState
 	LOCKED,
 }
 
-[ComponentEditorProps(category: "RP/Surveillance", description: "Tag — marks a vehicle as a police cruiser. Surveillance HUD only activates while seated in a tagged vehicle.")]
+[ComponentEditorProps(category: "RP/Surveillance", description: "Tag — marks a vehicle as a police / emergency vehicle. Surveillance HUD only activates while seated in a tagged vehicle. Server-side, the component also self-registers in a static set that RP_EmergencyYieldComponent iterates each tick.")]
 class RP_PoliceVehicleComponentClass : ScriptComponentClass
 {
 }
 
 class RP_PoliceVehicleComponent : ScriptComponent
 {
+	// Server-only registry. Yield manager iterates this instead of a world
+	// query each tick. Client instances of this component still exist (the
+	// surveillance HUD reads them via FindComponent) but stay out of the set.
+	protected static ref array<RP_PoliceVehicleComponent> s_aInstances = {};
+
+	static array<RP_PoliceVehicleComponent> GetInstances() { return s_aInstances; }
+
+	override void OnPostInit(IEntity owner)
+	{
+		super.OnPostInit(owner);
+		if (!GetGame().InPlayMode())
+			return;
+		if (!Replication.IsServer())
+		{
+			Print(string.Format("[RP_Yield] RP_PoliceVehicleComponent on %1 — not server, skipping registry.", owner), LogLevel.NORMAL);
+			return;
+		}
+		s_aInstances.Insert(this);
+		Print(string.Format("[RP_Yield] Registered emergency vehicle: %1 (registry size now %2)", owner, s_aInstances.Count()), LogLevel.NORMAL);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		int idx = s_aInstances.Find(this);
+		if (idx >= 0)
+			s_aInstances.Remove(idx);
+		super.OnDelete(owner);
+	}
 }
 
 [ComponentEditorProps(category: "RP/Audio", description: "Cop-equipment audio bank holder. Attach to a police vehicle and configure with the equipment .acp (radar, MDT, etc.). The surveillance HUD plays through this on LOCK.")]
