@@ -55,6 +55,7 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
    m_sGetOutWaypointPrefab "{C40316EE26846CAB}Prefabs/AI/Waypoints/AIWaypoint_GetOut.et"
   }
   RP_EmergencyYieldComponent "{6954445E52367962}" {
+   m_fBackRadiusMeters 25
   }
   RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
    m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"

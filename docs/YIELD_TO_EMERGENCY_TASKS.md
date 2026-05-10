@@ -71,11 +71,14 @@ State transitions:
 
 ## Implementation steps
 
-1. **Spike: cycle resume after one-shot waypoint.** Place a Move
-   waypoint *before* an active `AIWaypointCycle` on a loop vehicle.
-   Verify whether the agent returns to the cycle automatically when
-   the Move waypoint is satisfied, or whether the cycle has to be
-   re-added. Outcome drives step 6. ⏳ Not yet run.
+1. **Spike: cycle resume after one-shot waypoint.** ✅ **Retired.**
+   Replaced by snapshot/strip/restore — we don't depend on the cycle
+   auto-resuming because we explicitly remove the waypoints, hold the
+   references in a snapshot, and re-add them on release. Whether
+   `AIWaypointCycle` preserves its internal position across remove +
+   re-add of the same instance is a quality concern (worst case: the
+   cycle restarts at waypoint 0, which is an acceptable visual
+   artifact for civilian traffic) but no longer a correctness gate.
 2. **Spike: server-side `GetLightsState`.** ✅ **Verified.**
    `BaseLightManagerComponent.GetLightsState(ELightType.Dashboard)`
    reads the toggled state correctly server-side, so no RPC wrapper
@@ -86,20 +89,41 @@ State transitions:
    `OnPostInit` / `OnDelete`.
 4. **Bubble scan.** ✅ **Done.** 100m front / 50m back, sphere query
    + dot-product partition. `RP_EmergencyYieldComponent.ScanBubble`.
-5. **Pull-over geometry.** ⏳ Not yet implemented.
-   - `RoadNetworkManager.GetClosestRoad(targetPos, out road, out d)`.
-   - Use the road's direction at that point; cross with world up
-     gives the shoulder normal.
-   - `targetPos + shoulderNormal * 3.5m`.
-   - `RoadNetworkManager.GetReachableWaypointInRoad(agentPos, shoulderPoint, range, out wp)`
-     to snap to a navmesh-valid point.
-   - Spawn `AIWaypoint_Move` at the result with a low speed override.
-6. **State machine driver.** ⏳ Not yet implemented. Server-side
-   dictionary keyed by AI group. Tracks: cop ref, target waypoint,
-   state, entry time. Manager tick advances state per the rules above
-   and cleans up entries when the group or cop is gone. Pull-over
-   waypoint removal at RESUMING uses the path determined by the spike
-   (re-add cycle vs trust auto-fall-back).
+5. **Pull-over geometry.** ✅ **Done (in-lane).** Stop-in-lane via
+   `RoadNetworkManager.GetReachableWaypointInRoad` with a goal 10m
+   ahead in the vehicle's current heading. The "InRoad" snap
+   guarantees a navmesh-reachable point on the road graph, so the AI
+   doesn't give up and dismount the way it did with the off-road
+   stub. Fallback path: if no road network is available (or the
+   vehicle is off-road), Move waypoint goes at the vehicle's *current
+   position* — completes immediately, empty queue holds the AI in
+   place, no impossible navigation. Worst-case visual: vehicle stops
+   exactly where it is rather than pulling forward.
+   ⏳ **Side-of-road shoulder offset is follow-up polish** — current
+   behavior is "stop in lane," not "pull off to the shoulder." Real
+   shoulder requires `BaseRoad.GetWidth` + manual segment-direction
+   from `BaseRoad.GetPoints` (BaseRoad doesn't expose a direct
+   "direction at point" accessor) plus a navmesh check that the
+   shoulder point is actually reachable.
+6. **State machine driver.** ✅ **Done (snapshot/strip/restore +
+   refresh-based release).** `m_mYieldedGroups` keyed by SCR_AIGroup,
+   value `RP_YieldedGroupState` holding saved waypoints, the spawned
+   Move waypoint, the assigned cop, the stopped vehicle, and a
+   `m_fLastRefreshTime`. `BeginYield` snapshots, strips, spawns a
+   Move, adds it, stamps the time. The bubble scan refreshes the
+   timestamp on every tick the vehicle is still seen. `CheckReleases`
+   runs at the top of every tick and releases any yield whose
+   timestamp has gone stale beyond `m_fStaleReleaseSeconds` (default
+   0.75s, ~3 ticks at the default 0.25s interval).
+   Single-mechanism handling of all three real release cases:
+   - Cop drives past → vehicle leaves bubble → no refresh → stale.
+   - Cop kills lights → ScanBubble skipped → no refresh → stale.
+   - Cop is deleted → no scan → no refresh → stale.
+   Earlier distance-based release was wrong: the front bubble (100m)
+   exceeded the release distance (60m), so any vehicle picked up
+   beyond 60m forward immediately satisfied release, causing a
+   per-tick Begin/End oscillation that yanked the AI's waypoints
+   around enough that the driver dismounted.
 7. **Compliance hook.** ✅ **Done (stub).** Lookup uses a registry of
    `RP_DriverComplianceComponent` + `SCR_AIGroup.GetAgents()` membership
    check. `AIAgent.GetParentGroup()` returns null for an active driver
@@ -139,12 +163,14 @@ State transitions:
 
 | Criterion | Status |
 |-----------|--------|
-| AI in a traffic loop pulls over within 4s of entering the front bubble with cop lights on | ⏳ |
-| AI remains stopped while cop sits behind with lights on | ⏳ |
-| AI resumes within 6s of cop clearing (lights off OR cop > 60m away) | ⏳ |
-| No script errors across 10 trigger/clear cycles | ⏳ |
-| Multiple loop vehicles in the bubble pull over independently | ⏳ |
-| Lights off → never triggers | ⏳ |
+| AI in a traffic loop pulls over within 4s of entering the front bubble with cop lights on | ✅ Qualitatively verified |
+| AI remains stopped while cop sits behind with lights on | ✅ Qualitatively verified |
+| AI resumes within 6s of cop clearing (lights off OR cop > 60m away) | ✅ Qualitatively verified (refresh-based release, ~0.75s) |
+| No script errors across 10 trigger/clear cycles | ✅ Qualitatively verified |
+| Multiple loop vehicles in the bubble pull over independently | ⏳ Test setup has only one civilian in the loop; per-group state means independence is structurally guaranteed but unmeasured |
+| Lights off → never triggers | ✅ Qualitatively verified |
+| Bail recovery: driver re-boards via prepended GetIn waypoint | ✅ Qualitatively verified once an off-road snap forced a bail |
+| Re-yield after bail-recovery: driver re-yields naturally if still in bubble after re-boarding | ✅ Qualitatively verified |
 
 ## Follow-ups (later phases)
 
