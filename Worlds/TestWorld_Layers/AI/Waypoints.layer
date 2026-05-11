@@ -41,6 +41,6 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_iIndex 5
    }
   }
-  coords 3158.715 11.595 2763.081
+  coords 3163.408 11.595 2783.473
  }
 }

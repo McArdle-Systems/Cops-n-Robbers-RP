@@ -41,10 +41,14 @@ GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall
    Enabled 1
   }
  }
- coords 3273.79 3.175 2912.635
+ coords 3270.64 3.175 2885.832
  angles 0 -125.44 0
 }
 GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
- coords 3274.297 2 2911.568
+ coords 3271.147 2 2884.765
  angles 0 -123.44 0
+}
+SCR_DestructibleBuildingEntity Police_HQ : "{C914CC910842E973}Prefabs/Structures/Services/Government/police_101.et" {
+ coords 3281.939 -0.001 2881.914
+ angles 0 54.757 0
 }
