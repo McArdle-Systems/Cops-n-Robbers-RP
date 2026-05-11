@@ -148,6 +148,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 	protected static RP_TrafficLoopComponent s_Instance;
 	protected IEntity m_CrewSpawnMarker;
+	protected vector m_aCrewSpawnRot[4];
 	protected ref array<IEntity> m_aWaypointMarkersByIndex = {};
 
 	// Cached after StartLoop deletes the placeholder marker entities.
@@ -246,7 +247,8 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		// Cache spawn position and delete the placeholder marker so it
 		// doesn't sit at the spawn location as an always-blocking
 		// character.
-		m_vCrewSpawnPosition = m_CrewSpawnMarker.GetOrigin();
+		m_CrewSpawnMarker.GetTransform(m_aCrewSpawnRot);
+		m_vCrewSpawnPosition = m_aCrewSpawnRot[3];
 		SCR_EntityHelper.DeleteEntityAndChildren(m_CrewSpawnMarker);
 		m_CrewSpawnMarker = null;
 
@@ -341,14 +343,20 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 	protected void SpawnVehicleAndCrew(RP_TrafficSpawnConfig cfg, vector spawnPos)
 	{
-		IEntity vehicleEnt = SpawnEntityAt(cfg.m_sVehiclePrefab, spawnPos);
+		vector spawnTm[4];
+		spawnTm[0] = m_aCrewSpawnRot[0];
+		spawnTm[1] = m_aCrewSpawnRot[1];
+		spawnTm[2] = m_aCrewSpawnRot[2];
+		spawnTm[3] = spawnPos;
+
+		IEntity vehicleEnt = SpawnEntityAtTransform(cfg.m_sVehiclePrefab, spawnTm);
 		if (!vehicleEnt)
 		{
 			Print(string.Format("[RP_Traffic] Vehicle prefab %1 failed to spawn.", cfg.m_sVehiclePrefab), LogLevel.ERROR);
 			return;
 		}
 
-		IEntity crewEnt = SpawnEntityAt(cfg.m_sGroupPrefab, spawnPos);
+		IEntity crewEnt = SpawnEntityAtTransform(cfg.m_sGroupPrefab, spawnTm);
 		SCR_AIGroup crew = SCR_AIGroup.Cast(crewEnt);
 		if (!crew)
 		{
@@ -491,6 +499,22 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		EntitySpawnParams params = new EntitySpawnParams();
 		params.TransformMode = ETransformMode.WORLD;
 		params.Transform[3] = pos;
+		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
+	}
+
+	protected IEntity SpawnEntityAtTransform(ResourceName prefab, vector mat[4])
+	{
+		if (prefab.IsEmpty())
+			return null;
+		Resource res = Resource.Load(prefab);
+		if (!res || !res.IsValid())
+			return null;
+		EntitySpawnParams params = new EntitySpawnParams();
+		params.TransformMode = ETransformMode.WORLD;
+		params.Transform[0] = mat[0];
+		params.Transform[1] = mat[1];
+		params.Transform[2] = mat[2];
+		params.Transform[3] = mat[3];
 		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
 	}
 

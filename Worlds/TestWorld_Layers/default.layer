@@ -1,0 +1,50 @@
+GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
+ components {
+  RP_CopVehicleSpawnerComponent "{69562DEC1EDEDEA4}" {
+   m_aVehiclePrefabs {
+    RP_CopVehicleEntry "{69562DEC1D871A2B}" {
+     m_sPrefab "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/RPSuburban_police.et"
+     m_sDisplayName "Suburban (Police)"
+    }
+   }
+   m_sSpawnPointEntityName "SpawnPoint_Police_Vehicles"
+   m_vLocalSpawnOffset 0 0 0
+   m_aAllowedFactionKeys {
+    "Police"
+   }
+  }
+  ActionsManagerComponent "{69562DECEA2DF68C}" {
+   ActionContexts {
+    UserActionContext "{69562DECE937B84C}" {
+     UIInfo SCR_ActionUIInfo "{69562DECA639546B}" {
+      Name "Spawn Cop Car"
+     }
+     ContextName "police_car_spawner"
+     Position PointInfo "{69562DECA2F3C5B7}" {
+     }
+     Radius 1
+    }
+   }
+   additionalActions {
+    RP_SpawnCopVehicleUserAction "{69562DECD44D32CE}" {
+     ParentContextList {
+      "police_car_spawner"
+     }
+     UIInfo SCR_ActionUIInfo "{69562DECD847BBD4}" {
+      Name "Spawn Cop Car"
+     }
+     VisibilityRange 10
+    }
+   }
+  }
+  RplComponent "{5624A88DC2D9928D}" {
+   Enabled 1
+  }
+ }
+ coords 3273.79 3.175 2912.635
+ angles 0 -125.44 0
+}
+GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
+ coords 3274.297 2 2911.568
+ angles 0 -123.44 0
+}

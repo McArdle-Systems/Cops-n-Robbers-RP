@@ -1,9 +1,0 @@
-Vehicle Suburban_police : "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/RPSuburban_police.et" {
- components {
-  RP_MFDForceOnComponent "{69523BF3F2C06130}" {
-   Enabled 0
-  }
- }
- coords 3265.98 2 2913.313
- angles 0 -128.568 0
-}
