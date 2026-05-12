@@ -118,8 +118,6 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 		super.OnDelete(owner);
 	}
 
-	protected int m_iEmptyRegistryWarnings;
-
 	protected void Tick()
 	{
 		// Active yields evaluate first — this way "cop drove off / killed
@@ -129,17 +127,7 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 
 		array<RP_PoliceVehicleComponent> emergencyVehicles = RP_PoliceVehicleComponent.GetInstances();
 		if (!emergencyVehicles || emergencyVehicles.IsEmpty())
-		{
-			// Surface an empty registry once per ~5s so it's visible in logs
-			// without being spammy. Catches "manager ticking but no police
-			// vehicle registered" — i.e. RP_PoliceVehicleComponent missing
-			// from prefab or registration didn't run.
-			m_iEmptyRegistryWarnings++;
-			if (m_iEmptyRegistryWarnings % 20 == 1)
-				Print("[RP_Yield] Tick: registry is empty — no RP_PoliceVehicleComponent has registered. Check the prefab and that OnPostInit ran server-side.", LogLevel.WARNING);
 			return;
-		}
-		m_iEmptyRegistryWarnings = 0;
 
 		foreach (RP_PoliceVehicleComponent ev : emergencyVehicles)
 		{

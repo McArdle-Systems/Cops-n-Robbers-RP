@@ -105,10 +105,9 @@ class RP_TrafficActiveSpawn
 {
 	IEntity m_Vehicle;
 	SCR_AIGroup m_Crew;
-	// Diagnostic name assigned at spawn — "[FactionKey]_Car_[N]". Used
-	// in spawn/prune logs so vehicles are identifiable. Reforger's
-	// script API doesn't expose IEntity.SetName, so this lives on the
-	// tracking entry rather than the entity itself.
+	// Plate string assigned at spawn — "[FactionKey]_Car_[N]". Mirrored
+	// into RP_TrafficLoopComponent's m_mPlatesByRplId so clients can
+	// resolve it; kept here too for spawn/prune logs.
 	string m_sName;
 }
 
@@ -166,6 +165,14 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	// CIV_Car_47 etc. and that's fine.
 	protected ref map<string, int> m_mFactionCounters = new map<string, int>();
 
+	// Plate registry, replicated server->client via RPC. IEntity.SetName
+	// is not networked, so the HUD on a remote client can't read plates
+	// off the vehicle entity directly. The traffic loop registers each
+	// spawned vehicle here (server) and broadcasts to clients; the HUD
+	// queries by IEntity → RplId. Late-joiners RPC the server for a
+	// full resync on component init.
+	protected ref map<RplId, string> m_mPlatesByRplId = new map<RplId, string>();
+
 	// Scratch state for the clearance query callback (the query API
 	// uses a free-function-style callback, not a closure, so we set a
 	// flag and read it after the call).
@@ -180,7 +187,13 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		if (!GetGame().InPlayMode())
 			return;
 		if (!Replication.IsServer())
+		{
+			// Pull the existing plate registry from the server so the
+			// HUD on a late-joining client can resolve plates for
+			// vehicles spawned before they connected.
+			GetGame().GetCallqueue().CallLater(RequestPlateSync, 500, false);
 			return;
+		}
 		GetGame().GetCallqueue().CallLater(StartLoop, (int)(m_fStartDelaySeconds * 1000), false);
 	}
 
@@ -392,7 +405,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		crew.AddWaypoint(cycleWp);
 
 		string assignedName = AllocateVehicleName(crew);
-		vehicleEnt.SetName(assignedName);
+		RegisterPlate(vehicleEnt, assignedName);
 
 		RP_TrafficActiveSpawn entry = new RP_TrafficActiveSpawn();
 		entry.m_Vehicle = vehicleEnt;
@@ -524,5 +537,65 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		if (!ent)
 			return null;
 		return AIWaypoint.Cast(ent);
+	}
+
+	// ----------------------------------------------------------------------
+	// Plate registry (replicated)
+	// ----------------------------------------------------------------------
+
+	// Server-side: stash the plate and broadcast to clients. Vehicles
+	// without an RplComponent (shouldn't happen for networked vehicles,
+	// but be defensive) just live in the map under RplId(0) and won't
+	// resolve from a remote proxy — fine for SP/host where IsServer
+	// always matches.
+	protected void RegisterPlate(IEntity vehicle, string plate)
+	{
+		if (!vehicle)
+			return;
+		RplComponent rpl = RplComponent.Cast(vehicle.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_Traffic] Vehicle %1 has no RplComponent — plate '%2' stored locally only.", vehicle, plate), LogLevel.WARNING);
+			return;
+		}
+		RplId id = rpl.Id();
+		m_mPlatesByRplId.Set(id, plate);
+		Rpc(RpcDo_SetPlate, id, plate);
+	}
+
+	// HUD/etc. call this with a (possibly remote-proxy) vehicle entity.
+	// Returns the empty string if unknown — caller decides the fallback.
+	string GetVehiclePlate(IEntity vehicle)
+	{
+		if (!vehicle)
+			return "";
+		RplComponent rpl = RplComponent.Cast(vehicle.FindComponent(RplComponent));
+		if (!rpl)
+			return "";
+		return m_mPlatesByRplId.Get(rpl.Id());
+	}
+
+	protected void RequestPlateSync()
+	{
+		Rpc(RpcAsk_SyncPlates);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_SyncPlates()
+	{
+		// Re-broadcast every entry. Redundant on already-synced clients
+		// (they just re-write the same value); the cost is one
+		// (RplId, string) per active spawn, which is bounded by the
+		// pool size.
+		foreach (RplId id, string plate : m_mPlatesByRplId)
+		{
+			Rpc(RpcDo_SetPlate, id, plate);
+		}
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_SetPlate(RplId id, string plate)
+	{
+		m_mPlatesByRplId.Set(id, plate);
 	}
 }

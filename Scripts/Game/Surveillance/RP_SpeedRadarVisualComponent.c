@@ -20,10 +20,11 @@
  *   LOCKED    : LED rapid blink, Screen MFD on, blinky solid
  *
  * MFD control:
- *   Screen on/off is a single TogglePowerAction call on slot 0 of the
- *   parent vehicle's AG0_MFDManagerComponent. Idempotent — only flips
- *   when the desired state differs from IsMFDOn(0). Server-authoritative;
- *   replication carries state to all clients.
+ *   This component does NOT drive the MFD slot directly anymore. AG0's
+ *   TogglePowerAction is a silent no-op when called from a non-server
+ *   caller in this framework build (verified via dedi log), so the
+ *   HUD now drives MFD power on the cop car directly via a server-
+ *   routed RPC. See RP_SurveillanceHUDComponent.RequestRadarPower.
  */
 
 enum ERP_RadarVisualState
@@ -71,9 +72,6 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	[Attribute(defvalue: "0.08", desc: "LED rapid-blink 'off' phase during FLASHING/LOCKED (sec).")]
 	protected float m_fLEDFastOffSec;
 
-	[Attribute(defvalue: "0", desc: "MFD slot index on the parent vehicle to toggle for this radar's screen (0 = first registered slot).")]
-	protected int m_iMFDSlotIndex;
-
 	protected ERP_RadarVisualState m_eState = ERP_RadarVisualState.OFF;
 	protected IEntity m_LEDChild;
 	protected IEntity m_BlinkyLight;
@@ -96,11 +94,6 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 	// Whether the cone scan currently has a target. Pushed by the HUD
 	// each Tick. Decides green-vs-red during SCANNING.
 	protected bool m_bHasTarget;
-
-	// Cached parent-vehicle AG0 MFD manager. Resolved lazily on first
-	// state transition (the radar is spawned as a slot child, so the
-	// vehicle is GetOwner().GetParent() at that point).
-	protected AG0_MFDManagerComponent m_MFDManager;
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -194,46 +187,6 @@ class RP_SpeedRadarVisualComponent : ScriptComponent
 			ResolveChildren();
 		ApplyMaterialForState();
 		ApplyBlinkyForState();
-		ApplyDisplayForState();
-	}
-
-	// Toggles the parent vehicle's AG0 MFD slot to match the current
-	// radar state — on for any non-OFF state, off for OFF. Idempotent
-	// (compares wanted vs. IsMFDOn before flipping). Server-only;
-	// replication carries state to clients.
-	protected void ApplyDisplayForState()
-	{
-		AG0_MFDManagerComponent mgr = FindMFDManager();
-		if (!mgr)
-			return;
-		bool wantOn = (m_eState != ERP_RadarVisualState.OFF);
-		bool isOn = mgr.IsMFDOn(m_iMFDSlotIndex);
-		if (wantOn == isOn)
-			return;
-		if (!Replication.IsServer())
-			return;
-		mgr.TogglePowerAction(m_iMFDSlotIndex);
-	}
-
-	protected AG0_MFDManagerComponent FindMFDManager()
-	{
-		if (m_MFDManager)
-			return m_MFDManager;
-		IEntity owner = GetOwner();
-		if (!owner)
-			return null;
-		IEntity current = owner.GetParent();
-		while (current)
-		{
-			AG0_MFDManagerComponent mgr = AG0_MFDManagerComponent.Cast(current.FindComponent(AG0_MFDManagerComponent));
-			if (mgr)
-			{
-				m_MFDManager = mgr;
-				return mgr;
-			}
-			current = current.GetParent();
-		}
-		return null;
 	}
 
 	protected void ApplyMaterialForState()

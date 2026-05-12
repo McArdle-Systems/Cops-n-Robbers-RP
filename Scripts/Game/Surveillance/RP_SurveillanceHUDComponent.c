@@ -163,6 +163,12 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	// re-resolves on next open.
 	protected RP_SpeedRadarVisualComponent m_RadarVisual;
 
+	// The cop car the HUD opened against — cached so Hide() can drive
+	// the MFD off even if the player has stepped out of the vehicle
+	// (which is one of the Hide entry points), and so VerifyRadarPowerLater
+	// can poll IsMFDOn without re-fetching.
+	protected IEntity m_LastCopCar;
+
 	// Cached signal manager + signal index for the cop vehicle's speed
 	// readout. The radar screen's AG0_MFDTextConfig binds the same
 	// signal name so the framework substitutes the value into its
@@ -259,8 +265,15 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		m_wRoot.SetVisible(true);
 		m_bVisible = true;
 		IEntity copCar = GetPlayerCopVehicle();
+		m_LastCopCar = copCar;
 		m_RadarVisual = FindRadarVisual(copCar);
 		EnsureSpeedSignal(copCar);
+		// Drive the MFD on. On a dedicated client this is an RPC to the
+		// server because AG0's TogglePowerAction is silently a no-op
+		// from non-server callers (verified via dedi log) — the
+		// framework's promised internal client→server hop does not
+		// fire in this build.
+		RequestRadarPower(copCar, true);
 		PushRadarState(ERP_RadarVisualState.SCANNING);
 		PushRadarSpeedText("—");
 		PushSpeedSignal(0);
@@ -277,6 +290,13 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		// Zero the signal so the screen reads 0 km/h while powered off.
 		PushSpeedSignal(0);
 		PushRadarState(ERP_RadarVisualState.OFF);
+		// Drive the MFD off via the same server-routed path Show() uses.
+		// Uses the cached cop car since Hide() can also fire when the
+		// player has already stepped out (GetPlayerCopVehicle would
+		// return null in that case).
+		if (m_LastCopCar)
+			RequestRadarPower(m_LastCopCar, false);
+		m_LastCopCar = null;
 		m_RadarVisual = null;
 		m_SignalsMgr = null;
 		m_iSpeedSignalIdx = -1;
@@ -630,12 +650,21 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		return null;
 	}
 
-	// POC stub: stand-in plate from the entity's workbench name.
-	// Replace with a real plate registry once we add one.
-	// Reads the entity name (set by RP_TrafficLoopComponent.SetName at
-	// spawn for pool vehicles; workbench-authored for everything else).
+	// Reads the plate from RP_TrafficLoopComponent's replicated registry
+	// (server stores at spawn, broadcasts to clients). Falls back to
+	// IEntity.GetName for workbench-authored vehicles outside the
+	// traffic pool — that path is single-machine-only since SetName
+	// isn't replicated, but it's fine for SP and matches the original
+	// POC stub for non-pool vehicles.
 	protected string GetVehiclePlate(IEntity vehicle)
 	{
+		RP_TrafficLoopComponent mgr = RP_TrafficLoopComponent.GetInstance();
+		if (mgr)
+		{
+			string plate = mgr.GetVehiclePlate(vehicle);
+			if (!plate.IsEmpty())
+				return plate;
+		}
 		string name = vehicle.GetName();
 		if (name.IsEmpty())
 			return "—";
@@ -726,6 +755,12 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	{
 		if (!copCar)
 			return null;
+		// Also check the cop car itself for the visual, in case it's
+		// mounted on the root rather than a slot child. Cheap and
+		// removes one failure mode.
+		RP_SpeedRadarVisualComponent rootVisual = RP_SpeedRadarVisualComponent.Cast(copCar.FindComponent(RP_SpeedRadarVisualComponent));
+		if (rootVisual)
+			return rootVisual;
 		IEntity child = copCar.GetChildren();
 		while (child)
 		{
@@ -737,6 +772,7 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 				return inner;
 			child = child.GetSibling();
 		}
+		Print(string.Format("[RP_Surveillance] FindRadarVisual: no visual found under %1.", copCar), LogLevel.WARNING);
 		return null;
 	}
 
@@ -758,9 +794,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 
 	protected void PushRadarState(ERP_RadarVisualState state)
 	{
-		if (!m_RadarVisual)
-			return;
-		m_RadarVisual.SetState(state);
+		// LED + blinky live on the local radar visual component. MFD
+		// power is driven server-side via the per-player RPC relay
+		// (see RequestRadarPower below).
+		if (m_RadarVisual)
+			m_RadarVisual.SetState(state);
 	}
 
 	protected void PushRadarSpeedText(string text)
@@ -769,10 +807,14 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			m_RadarVisual.SetSpeedText(text);
 	}
 
-	// Resolves the cop vehicle's SignalsManagerComponent and registers
-	// (or finds) the speed signal index. Idempotent — re-invoking after
-	// resolution is a no-op. Cleared on Hide() so re-Show on a different
-	// cop car re-resolves.
+	// Resolves the cop car's SignalsManagerComponent and registers (or
+	// finds) the MP speed signal. Runs identically on server and client
+	// — the MP signal pool is "synchronized over the network
+	// automatically" per the engine docs, so a client write also
+	// updates the framework-visible value locally for our own radar
+	// prop reads. (Whether the value reaches other clients is up to
+	// the engine; for the bug at hand we only need this client's
+	// screen to render.)
 	protected void EnsureSpeedSignal(IEntity copCar)
 	{
 		if (m_iSpeedSignalIdx >= 0 && m_SignalsMgr)
@@ -804,5 +846,32 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	{
 		if (m_RadarVisual)
 			m_RadarVisual.SetHasTarget(hasTarget);
+	}
+
+	// ----------------------------------------------------------------------
+	// MFD power (routed through the per-player RPC relay)
+	// ----------------------------------------------------------------------
+	//
+	// AG0_MFDManagerComponent.TogglePowerAction is server-authoritative
+	// and is silently a no-op when invoked from a non-server caller in
+	// this build (verified via dedi log: post-Toggle IsMFDOn=0 with
+	// isServer=0). Tried routing through this HUD's own RplRpc(Server)
+	// method first — silently dropped on the wire, because the GameMode
+	// entity is server-owned and clients have no send-authority through
+	// its RplComponent. The fix: route through RP_PlayerRpcRelayComponent
+	// on the player's character, which the client owns. See that
+	// component's header comment for the full rationale.
+
+	protected void RequestRadarPower(IEntity copCar, bool wantOn)
+	{
+		if (!copCar)
+			return;
+		RP_PlayerRpcRelayComponent relay = RP_PlayerRpcRelayComponent.GetLocal();
+		if (!relay)
+		{
+			Print("[RP_Surveillance] RequestRadarPower: no RP_PlayerRpcRelayComponent on local player character — radar screen will not power on. Attach the component to the cop character prefab.", LogLevel.WARNING);
+			return;
+		}
+		relay.RequestRadarPower(copCar, wantOn);
 	}
 }

@@ -67,5 +67,7 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
     }
    }
   }
+  RP_PlayerRpcRelayComponent "{520ECCC0517E0001}" {
+  }
  }
 }
