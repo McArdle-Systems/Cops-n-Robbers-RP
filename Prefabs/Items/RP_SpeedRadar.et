@@ -1,0 +1,34 @@
+GenericEntity {
+ ID "6950274E92A11F7E"
+ components {
+  SignalsManagerComponent "{695B0E673781DCDD}" {
+  }
+  RP_CopAudioComponent "{6950274F3DD03407}" {
+   Filenames {
+    "{5319CE72BC43437D}Assets/Audio/Radar.acp"
+   }
+  }
+  MeshObject "{6950274A631599D9}" {
+   Object "{7370290C6A3AC27B}Assets/Models/SpeedRadarV2/SpeedRadarBody.xob"
+  }
+  RP_SpeedRadarVisualComponent "{6F8B2A7C5D193F01}" {
+   m_sLEDMeshXob "{1E21C7E54BCBA536}Assets/Models/SpeedRadarV2/SpeedRadarLED.xob"
+   m_sLEDOnMaterial "{A1C9781CFEFA3B29}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Red.emat"
+   m_sLEDIdleMaterial "{5BA0B9A29A796864}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Green.emat"
+   m_sLEDOffMaterial "{195BFF99B5195C3A}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Off.emat"
+   m_sBlinkyPrefab "{6F8B2A7C5D193E04}Prefabs/Effects/Lights/RP_SpeedRadarBlinky.et"
+   m_vBlinkyOffset 0 0.1 0
+  }
+  SlotManagerComponent "{6F8B2A7C5D193F10}" {
+   Slots {
+    EntitySlotInfo LED {
+     Offset 0 0 0
+     Prefab "{7B4D8A3F2E195C01}Prefabs/Items/SpeedRadar_LED.et"
+    }
+   }
+  }
+  Hierarchy "{6950F33B69DCDD55}" {
+  }
+ }
+ coords 0 0 0
+}
