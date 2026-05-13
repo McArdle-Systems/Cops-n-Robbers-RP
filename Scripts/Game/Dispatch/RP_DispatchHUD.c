@@ -104,13 +104,6 @@ class RP_DispatchPopup : ChimeraMenuBase
 
 	void OnDispatchClicked()
 	{
-		RP_DispatchManagerComponent mgr = RP_DispatchManagerComponent.GetInstance();
-		if (!mgr)
-		{
-			Print("[RP_Dispatch] Manager not available on dispatch click.", LogLevel.WARNING);
-			Close();
-			return;
-		}
 		PlayerController pc = GetGame().GetPlayerController();
 		if (!pc)
 		{
@@ -123,7 +116,19 @@ class RP_DispatchPopup : ChimeraMenuBase
 			Close();
 			return;
 		}
-		mgr.Dispatch(m_sDispatchTypeStatic, player.GetOrigin());
+
+		// Route via the player character (client-owned) so the RPC
+		// reaches the server. See RP_PlayerRpcRelayComponent.
+		RP_PlayerRpcRelayComponent relay = RP_PlayerRpcRelayComponent.GetLocal();
+		if (!relay)
+		{
+			Print("[RP_Dispatch] No RP_PlayerRpcRelayComponent on local player — dispatch dropped. (Are you playing a cop character?)", LogLevel.WARNING);
+			Close();
+			return;
+		}
+
+		Print(string.Format("[RP_Dispatch] Client requesting dispatch type=%1 pos=%2", m_sDispatchTypeStatic, player.GetOrigin()), LogLevel.NORMAL);
+		relay.RequestDispatch(m_sDispatchTypeStatic, player.GetOrigin());
 		Close();
 	}
 }

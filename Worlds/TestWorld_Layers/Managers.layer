@@ -46,7 +46,7 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
      m_sTypeTag "Police"
      m_sCrewGroupPrefab "{A9B3913BCB259F0F}Prefabs/AI/Groups/RP_Police_Group_1.et"
      m_sVehiclePrefab "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et"
-     m_sSpawnPointName "SpawnPoint_Police"
+     m_sSpawnPointName "SpawnPoint_Police_AI"
      m_fLoiterSeconds 10
     }
    }
@@ -59,7 +59,6 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
   }
   RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
    m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
-   m_fSpeedLimitKmh 40
   }
   RP_TrafficLoopComponent "{694E1EF5FFBE5B61}" {
    m_aSpawnConfigs {
@@ -84,7 +83,7 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
      m_sVehiclePrefab "{DCAF0585D17B917A}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_tanker_CIV_randomized.et"
     }
    }
-   m_iTargetActiveCount 20
+   m_iTargetActiveCount 10
    m_fSpawnIntervalSeconds 3
    m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
   }
@@ -95,6 +94,7 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
   }
  }
  coords 3259.196 2.003 2888.64
+ PlayerControllerPrefab "{A1AE127F16DD352E}Prefabs/Characters/Core/DefaultPlayerControllerMP_Factions.et"
 }
 RadioManagerEntity RadioManager : "{B8E09FAB91C4ECCD}Prefabs/Systems/Radio/RadioManager.et" {
  coords 1412.994 39 2798.212

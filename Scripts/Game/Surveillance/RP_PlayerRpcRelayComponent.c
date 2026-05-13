@@ -43,6 +43,53 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 	[Attribute(defvalue: "0", desc: "MFD slot index on the cop vehicle to toggle for the radar screen.")]
 	protected int m_iRadarMFDSlotIndex;
 
+	// Poll counter for late-join plate sync. Caps the wait at ~10s so
+	// remote-proxy instances (other players' characters on this client)
+	// don't poll forever.
+	protected int m_iPlateSyncAttempts;
+
+	override void OnPostInit(IEntity owner)
+	{
+		super.OnPostInit(owner);
+		if (!GetGame().InPlayMode())
+			return;
+		// Server already holds the authoritative plate registry; nothing
+		// to fetch. Only client instances of this relay need to ask.
+		if (Replication.IsServer())
+			return;
+		GetGame().GetCallqueue().CallLater(TryFirePlateSync, 500, true);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		GetGame().GetCallqueue().Remove(TryFirePlateSync);
+		super.OnDelete(owner);
+	}
+
+	// Fires RequestPlateSync once we've confirmed this relay is on the
+	// local player's controlled character. Each connected client has
+	// replicas of every other player's character with this same
+	// component attached, but GetLocal() singles out the one on their
+	// own controlled entity — only that instance should fire the sync.
+	protected void TryFirePlateSync()
+	{
+		if (GetLocal() == this)
+		{
+			GetGame().GetCallqueue().Remove(TryFirePlateSync);
+			RequestPlateSync();
+			return;
+		}
+		m_iPlateSyncAttempts++;
+		if (m_iPlateSyncAttempts > 20)
+		{
+			// ~10s elapsed. Either we're a remote-proxy instance (the
+			// local owner's relay will fire its own sync) or the local
+			// player still has not been assigned to a character. Stop
+			// polling either way.
+			GetGame().GetCallqueue().Remove(TryFirePlateSync);
+		}
+	}
+
 	// ----------------------------------------------------------------------
 	// Public entry: radar MFD power
 	// ----------------------------------------------------------------------
@@ -77,6 +124,9 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 		ApplyRadarPower(rpl.GetEntity(), wantOn);
 	}
 
+	// Drives both the MFD screen power and the server-side radar logic
+	// in lockstep. Screen power is idempotent-checked against
+	// IsMFDOn; logic activation is idempotent inside SetActive itself.
 	protected void ApplyRadarPower(IEntity copCar, bool wantOn)
 	{
 		if (!copCar)
@@ -85,11 +135,186 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 		if (!mgr)
 		{
 			Print(string.Format("[RP_RpcRelay] ApplyRadarPower: cop car %1 has no AG0_MFDManagerComponent.", copCar), LogLevel.WARNING);
+		}
+		else if (wantOn != mgr.IsMFDOn(m_iRadarMFDSlotIndex))
+		{
+			mgr.TogglePowerAction(m_iRadarMFDSlotIndex);
+		}
+
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarPower: cop car %1 has no RP_SpeedRadarLogicComponent — radar will not scan.", copCar), LogLevel.WARNING);
 			return;
 		}
-		if (wantOn == mgr.IsMFDOn(m_iRadarMFDSlotIndex))
+		logic.SetActive(wantOn);
+	}
+
+	// ----------------------------------------------------------------------
+	// Public entry: dispatch request
+	// ----------------------------------------------------------------------
+
+	void RequestDispatch(string typeTag, vector targetPos)
+	{
+		if (Replication.IsServer())
+		{
+			ApplyDispatch(typeTag, targetPos);
 			return;
-		mgr.TogglePowerAction(m_iRadarMFDSlotIndex);
+		}
+		Rpc(RpcAsk_Dispatch, typeTag, targetPos);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_Dispatch(string typeTag, vector targetPos)
+	{
+		Print(string.Format("[RP_RpcRelay] RpcAsk_Dispatch: server received type=%1 pos=%2", typeTag, targetPos), LogLevel.NORMAL);
+		ApplyDispatch(typeTag, targetPos);
+	}
+
+	protected void ApplyDispatch(string typeTag, vector targetPos)
+	{
+		RP_DispatchManagerComponent mgr = RP_DispatchManagerComponent.GetInstance();
+		if (!mgr)
+		{
+			Print("[RP_RpcRelay] ApplyDispatch: dispatch manager not available.", LogLevel.WARNING);
+			return;
+		}
+		mgr.Dispatch(typeTag, targetPos);
+	}
+
+	// ----------------------------------------------------------------------
+	// Public entry: admin — set max active traffic
+	// ----------------------------------------------------------------------
+
+	void RequestSetMaxTraffic(int newTarget)
+	{
+		if (Replication.IsServer())
+		{
+			// Server can apply directly; still verify caller is admin (in
+			// case this is a listen-server non-host calling).
+			ApplySetMaxTraffic(newTarget, GetCallerPlayerId());
+			return;
+		}
+		Rpc(RpcAsk_SetMaxTraffic, newTarget);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_SetMaxTraffic(int newTarget)
+	{
+		int senderId = GetCallerPlayerId();
+		Print(string.Format("[RP_RpcRelay] RpcAsk_SetMaxTraffic: server received target=%1 from playerId=%2", newTarget, senderId), LogLevel.NORMAL);
+		ApplySetMaxTraffic(newTarget, senderId);
+	}
+
+	// playerId is the original requester. Server re-checks admin before
+	// applying — never trust the client's local IsLocalAdmin() gate.
+	protected void ApplySetMaxTraffic(int newTarget, int senderPlayerId)
+	{
+		if (!RP_AdminUtils.IsPlayerAdmin(senderPlayerId))
+		{
+			Print(string.Format("[RP_RpcRelay] SetMaxTraffic rejected: playerId=%1 is not on the admin list.", senderPlayerId), LogLevel.WARNING);
+			return;
+		}
+		RP_TrafficLoopComponent loop = RP_TrafficLoopComponent.GetInstance();
+		if (!loop)
+		{
+			Print("[RP_RpcRelay] SetMaxTraffic: traffic loop component not available.", LogLevel.WARNING);
+			return;
+		}
+		loop.SetTargetActiveCount(newTarget);
+	}
+
+	// ----------------------------------------------------------------------
+	// Public entry: admin — fetch current max active traffic
+	// ----------------------------------------------------------------------
+
+	void RequestTrafficCap()
+	{
+		if (Replication.IsServer())
+		{
+			RP_TrafficLoopComponent loop = RP_TrafficLoopComponent.GetInstance();
+			if (loop)
+				RP_AdminPanelUI.ReceiveTrafficCap(loop.GetTargetActiveCount());
+			return;
+		}
+		Rpc(RpcAsk_TrafficCap);
+	}
+
+	// Server side. Replies via owner-targeted RPC so only the asking
+	// client gets it, not every connected client.
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_TrafficCap()
+	{
+		RP_TrafficLoopComponent loop = RP_TrafficLoopComponent.GetInstance();
+		if (!loop)
+		{
+			Print("[RP_RpcRelay] RpcAsk_TrafficCap: traffic loop not available.", LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcDo_TrafficCap, loop.GetTargetActiveCount());
+	}
+
+	// Client side, delivered to the player who owns this character.
+	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
+	protected void RpcDo_TrafficCap(int currentCap)
+	{
+		RP_AdminPanelUI.ReceiveTrafficCap(currentCap);
+	}
+
+	// Resolves the player who owns this character. On the server side of
+	// an RPC, GetOwner() is the character entity the RPC came through; on
+	// a listen-server local call it's still that same character, since
+	// the relay is on the player char prefab.
+	protected int GetCallerPlayerId()
+	{
+		IEntity owner = GetOwner();
+		if (!owner)
+			return 0;
+		PlayerManager pm = GetGame().GetPlayerManager();
+		if (!pm)
+			return 0;
+		return pm.GetPlayerIdFromControlledEntity(owner);
+	}
+
+	// ----------------------------------------------------------------------
+	// Late-join: ask the server to re-broadcast the plate registry
+	// ----------------------------------------------------------------------
+	//
+	// RP_TrafficLoopComponent lives on the GameMode (server-owned), so a
+	// client->server RPC declared on it is silently dropped — same gotcha
+	// as the radar-power toggle. Route the resync through here instead:
+	// this component is on the player character (client-owned), so the
+	// RplRcver.Server delivery actually fires.
+	//
+	// Triggered once per local-player relay (see TryFirePlateSync below).
+	// On the server side the request is idempotent — re-broadcasting the
+	// map just re-writes the same values on each client.
+
+	void RequestPlateSync()
+	{
+		if (Replication.IsServer())
+		{
+			ApplyPlateSync();
+			return;
+		}
+		Rpc(RpcAsk_SyncPlates);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_SyncPlates()
+	{
+		ApplyPlateSync();
+	}
+
+	protected void ApplyPlateSync()
+	{
+		RP_TrafficLoopComponent loop = RP_TrafficLoopComponent.GetInstance();
+		if (!loop)
+		{
+			Print("[RP_RpcRelay] ApplyPlateSync: traffic loop not available.", LogLevel.WARNING);
+			return;
+		}
+		loop.BroadcastAllPlates();
 	}
 
 	// ----------------------------------------------------------------------

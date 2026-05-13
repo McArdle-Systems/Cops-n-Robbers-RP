@@ -145,6 +145,9 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "4.0", desc: "Offset distance when searching for an unblocked spawn position around the CREW_SPAWN marker.")]
 	protected float m_fOffsetSearchDistance;
 
+	[Attribute(defvalue: "300.0", desc: "Seconds between orphan-crew sweeps. Safety net for civilian AI groups that lost their vehicle without going through PruneDead (pre-fix accumulation, engine GarbageSystem races). Per-pass cost is tiny (~one set-lookup per active group), so this can run as fast or slow as you want — default 5 min is more than enough.")]
+	protected float m_fOrphanReapIntervalSeconds;
+
 	protected static RP_TrafficLoopComponent s_Instance;
 	protected IEntity m_CrewSpawnMarker;
 	protected vector m_aCrewSpawnRot[4];
@@ -180,6 +183,61 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 	static RP_TrafficLoopComponent GetInstance() { return s_Instance; }
 
+	// ----------------------------------------------------------------------
+	// Live cap control (admin UI)
+	// ----------------------------------------------------------------------
+
+	int GetTargetActiveCount() { return m_iTargetActiveCount; }
+
+	// Server-only. Updates the pool target and immediately culls excess so
+	// the slider feels responsive. The natural-attrition path (just lower
+	// the cap, wait for vehicles to die) is left for the loop's normal
+	// behavior on the way back up — TrySpawnOne already gates on the cap.
+	void SetTargetActiveCount(int newTarget)
+	{
+		if (!Replication.IsServer())
+			return;
+		if (newTarget < 0)
+			newTarget = 0;
+
+		int oldTarget = m_iTargetActiveCount;
+		m_iTargetActiveCount = newTarget;
+		Print(string.Format("[RP_Traffic] Target active count: %1 → %2 (currently %3 active)", oldTarget, newTarget, m_aActiveSpawns.Count()), LogLevel.NORMAL);
+
+		int culled = 0;
+		while (m_aActiveSpawns.Count() > m_iTargetActiveCount)
+		{
+			DespawnLast();
+			culled++;
+		}
+		if (culled > 0)
+			Print(string.Format("[RP_Traffic] Culled %1 active vehicle(s) to honor lowered cap.", culled), LogLevel.NORMAL);
+	}
+
+	// Despawns the most-recently-spawned entry. Mirrors PruneDead's
+	// cleanup (ReapCrewLiveAgents + remove from m_aActiveSpawns) but also
+	// deletes the still-alive vehicle entity, which PruneDead never has
+	// to do because its entries are already dead.
+	protected void DespawnLast()
+	{
+		int idx = m_aActiveSpawns.Count() - 1;
+		if (idx < 0)
+			return;
+		RP_TrafficActiveSpawn entry = m_aActiveSpawns[idx];
+		if (entry)
+		{
+			if (entry.m_Crew)
+				ReapCrewLiveAgents(entry.m_Crew);
+			entry.m_Crew = null;
+			if (entry.m_Vehicle)
+			{
+				SCR_EntityHelper.DeleteEntityAndChildren(entry.m_Vehicle);
+				entry.m_Vehicle = null;
+			}
+		}
+		m_aActiveSpawns.Remove(idx);
+	}
+
 	override void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
@@ -188,10 +246,12 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 			return;
 		if (!Replication.IsServer())
 		{
-			// Pull the existing plate registry from the server so the
-			// HUD on a late-joining client can resolve plates for
-			// vehicles spawned before they connected.
-			GetGame().GetCallqueue().CallLater(RequestPlateSync, 500, false);
+			// Late-join plate resync is fired by the local player's
+			// RP_PlayerRpcRelayComponent (the relay is owned by the
+			// joining client, so RplRcver.Server on it actually
+			// arrives — unlike client->server on this GameMode
+			// component, which gets dropped because the GameMode is
+			// server-owned).
 			return;
 		}
 		GetGame().GetCallqueue().CallLater(StartLoop, (int)(m_fStartDelaySeconds * 1000), false);
@@ -200,6 +260,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	override void OnDelete(IEntity owner)
 	{
 		GetGame().GetCallqueue().Remove(SpawnTick);
+		GetGame().GetCallqueue().Remove(ReapOrphanCrews);
 		if (s_Instance == this)
 			s_Instance = null;
 		super.OnDelete(owner);
@@ -272,6 +333,15 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		// pool starts populating without waiting for the first interval.
 		GetGame().GetCallqueue().CallLater(SpawnTick, (int)(m_fSpawnIntervalSeconds * 1000), true);
 		SpawnTick();
+
+		// Slow orphan-reaper. Decoupled from SpawnTick so the per-3s
+		// hot path stays minimal, and so the reap cadence reads
+		// independently (5 min by default — see attribute). First fire
+		// is one interval in; pre-fix accumulation gets cleared on the
+		// first sweep after server restart.
+		int reapMs = (int)(m_fOrphanReapIntervalSeconds * 1000);
+		if (reapMs > 0)
+			GetGame().GetCallqueue().CallLater(ReapOrphanCrews, reapMs, true);
 	}
 
 	protected void SpawnTick()
@@ -282,8 +352,10 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	}
 
 	// Drops entries whose vehicle has been destroyed (wreckage) or
-	// whose crew has been wiped out. Wreckage and corpses are not
-	// deleted here — they remain in the world for cleanup gameplay.
+	// whose crew has been wiped out. Wreckage and corpses are left in
+	// the world for cleanup gameplay (EMS, tow). Live AI orphaned by a
+	// vanished vehicle, however, get cleaned up here — they have no
+	// vehicle, no waypoints, and no purpose, and pile up otherwise.
 	protected void PruneDead()
 	{
 		array<int> toRemove = {};
@@ -298,9 +370,88 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		{
 			int idx = toRemove[j];
 			RP_TrafficActiveSpawn entry = m_aActiveSpawns[idx];
-			Print(string.Format("[RP_Traffic] Pruning dead entry %1 (vehicle=%2 crew=%3).", entry.m_sName, entry.m_Vehicle, entry.m_Crew), LogLevel.NORMAL);
+			int killed = ReapCrewLiveAgents(entry.m_Crew);
+			Print(string.Format("[RP_Traffic] Pruning dead entry %1 (vehicle=%2 crew=%3, orphans killed=%4).", entry.m_sName, entry.m_Vehicle, entry.m_Crew, killed), LogLevel.NORMAL);
+			entry.m_Crew = null;
 			m_aActiveSpawns.Remove(idx);
 		}
+	}
+
+	// Sweeps the RP_DriverComplianceComponent registry for civilian
+	// groups that aren't held by any active spawn. Catches:
+	//   - pre-fix accumulation: groups whose entry was pruned before
+	//     ReapCrewLiveAgents existed.
+	//   - race window: engine's GarbageSystem reaps a vehicle and the
+	//     crew is orphan for one tick before PruneDead sees it (this
+	//     sweep catches them on the same tick the prune does, so no
+	//     visible delay).
+	// Cops/dispatch groups don't carry RP_DriverComplianceComponent,
+	// so they're inherently excluded.
+	// Until civilians get something to do on foot (call a tow, request
+	// a new car), the right answer for an orphan is just reap. Re-think
+	// when that gameplay lands.
+	protected void ReapOrphanCrews()
+	{
+		array<RP_DriverComplianceComponent> instances = RP_DriverComplianceComponent.GetInstances();
+		if (!instances || instances.IsEmpty())
+			return;
+		set<SCR_AIGroup> activeGroups = new set<SCR_AIGroup>();
+		foreach (RP_TrafficActiveSpawn entry : m_aActiveSpawns)
+		{
+			if (entry && entry.m_Crew)
+				activeGroups.Insert(entry.m_Crew);
+		}
+		// Snapshot the registry — deleting groups inside the loop
+		// mutates s_aInstances via the component's OnDelete.
+		array<SCR_AIGroup> toReap = {};
+		foreach (RP_DriverComplianceComponent compliance : instances)
+		{
+			if (!compliance)
+				continue;
+			SCR_AIGroup group = SCR_AIGroup.Cast(compliance.GetOwner());
+			if (!group)
+				continue;
+			if (activeGroups.Contains(group))
+				continue;
+			toReap.Insert(group);
+		}
+		if (toReap.IsEmpty())
+			return;
+		int totalKilled = 0;
+		foreach (SCR_AIGroup group : toReap)
+		{
+			totalKilled += ReapCrewLiveAgents(group);
+		}
+		Print(string.Format("[RP_Traffic] Reaped %1 orphan crew group(s), %2 live AI deleted.", toReap.Count(), totalKilled), LogLevel.NORMAL);
+	}
+
+	// Deletes character entities for any AI agent in the group whose
+	// controlled character is still alive, then deletes the
+	// SCR_AIGroup container. Corpses (DESTROYED damage state) are left
+	// alone — cleanup gameplay still applies. Returns the number of
+	// live characters deleted.
+	protected int ReapCrewLiveAgents(SCR_AIGroup crew)
+	{
+		if (!crew)
+			return 0;
+		array<AIAgent> agents = {};
+		crew.GetAgents(agents);
+		int killed = 0;
+		foreach (AIAgent agent : agents)
+		{
+			if (!agent)
+				continue;
+			IEntity character = agent.GetControlledEntity();
+			if (!character)
+				continue;
+			SCR_DamageManagerComponent dmg = SCR_DamageManagerComponent.Cast(character.FindComponent(SCR_DamageManagerComponent));
+			if (dmg && dmg.GetState() == EDamageState.DESTROYED)
+				continue;
+			SCR_EntityHelper.DeleteEntityAndChildren(character);
+			killed++;
+		}
+		SCR_EntityHelper.DeleteEntityAndChildren(crew);
+		return killed;
 	}
 
 	protected bool IsEntryDead(RP_TrafficActiveSpawn entry)
@@ -575,18 +726,16 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		return m_mPlatesByRplId.Get(rpl.Id());
 	}
 
-	protected void RequestPlateSync()
+	// Server-only. Called via RP_PlayerRpcRelayComponent when a client
+	// joins (the relay is the only RPC route that works for
+	// client->server on a GameMode-hosted component; see the relay
+	// header). Re-broadcasts every entry — redundant on already-synced
+	// clients (they just re-write the same value); cost is one
+	// (RplId, string) per active spawn, bounded by the pool size.
+	void BroadcastAllPlates()
 	{
-		Rpc(RpcAsk_SyncPlates);
-	}
-
-	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
-	protected void RpcAsk_SyncPlates()
-	{
-		// Re-broadcast every entry. Redundant on already-synced clients
-		// (they just re-write the same value); the cost is one
-		// (RplId, string) per active spawn, which is bounded by the
-		// pool size.
+		if (!Replication.IsServer())
+			return;
 		foreach (RplId id, string plate : m_mPlatesByRplId)
 		{
 			Rpc(RpcDo_SetPlate, id, plate);
