@@ -714,6 +714,24 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		Rpc(RpcDo_SetPlate, id, plate);
 	}
 
+	// External spawners (e.g. RP_CopVehicleSpawnerComponent) call this
+	// to add their vehicles to the same registry the civ traffic loop
+	// uses. Allocates "<factionKey>_Car_N" from the shared counter map
+	// and registers + broadcasts. Server-only. Returns the assigned
+	// plate (empty string on failure).
+	string AllocateAndRegisterPlate(IEntity vehicle, string factionKey)
+	{
+		if (!Replication.IsServer() || !vehicle || factionKey.IsEmpty())
+			return "";
+		int next = 1;
+		if (m_mFactionCounters.Contains(factionKey))
+			next = m_mFactionCounters.Get(factionKey) + 1;
+		m_mFactionCounters.Set(factionKey, next);
+		string plate = string.Format("%1_Car_%2", factionKey, next);
+		RegisterPlate(vehicle, plate);
+		return plate;
+	}
+
 	// HUD/etc. call this with a (possibly remote-proxy) vehicle entity.
 	// Returns the empty string if unknown — caller decides the fallback.
 	string GetVehiclePlate(IEntity vehicle)

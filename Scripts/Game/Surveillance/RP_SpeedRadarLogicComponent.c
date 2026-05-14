@@ -213,6 +213,9 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 					pubPlateFlagged = true;
 					if (!m_sLockSoundEvent.IsEmpty())
 					{
+						bool hostHasPC = GetGame().GetPlayerController() != null;
+						Print(string.Format("[RP_SpeedRadarLogic] %1 Lock fired (NORMAL->FLASHING). plate=%2 speed=%3 km/h event='%4' broadcasting RPC, serverSelfLoopback=%5 (skipped on dedi).",
+							RoleTag(), m_sLockedPlate, m_fTriggerSpeedKmh, m_sLockSoundEvent, hostHasPC));
 						// Broadcast to every client; each one plays the
 						// beep locally through its own SpeedRadar prop's
 						// SoundComponent.
@@ -224,7 +227,7 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 						// has no PlayerController (and no audio output
 						// anyway — SoundComponents aren't realized on a
 						// headless server).
-						if (GetGame().GetPlayerController())
+						if (hostHasPC)
 							PlayLockSoundLocal();
 					}
 					break;
@@ -348,6 +351,7 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
 	protected void RpcDo_LockSound()
 	{
+		Print(string.Format("[RP_SpeedRadarLogic] %1 RpcDo_LockSound received — invoking PlayLockSoundLocal.", RoleTag()));
 		PlayLockSoundLocal();
 	}
 
@@ -355,30 +359,75 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	// Invoked by RpcDo_LockSound on remote clients; the server-self call
 	// happens directly in TickServer's lock-trigger branch since
 	// Rpc(RplRcver.Broadcast) does not loop back to the sender.
-	//
-	// Known limitation: on a dedicated server build of the mod, the SDK's
-	// SoundComponent.SoundEvent / SoundEventTransform return
-	// AudioHandle.Invalid for custom-bundled .acp event names — same
-	// behavior across dispatch audio and radar audio. Workbench play works.
-	// Asset GUIDs are in the published rdb, broadcast plumbing is verified,
-	// SoundComponent is findable on the prop at runtime. Cause not yet
-	// established (custom .acp bank load on dedi clients). See linked
-	// tracking issue.
 	protected void PlayLockSoundLocal()
 	{
+		string role = RoleTag();
 		if (m_sLockSoundEvent.IsEmpty())
+		{
+			Print(string.Format("[RP_SpeedRadarLogic] %1 PlayLockSoundLocal: m_sLockSoundEvent is empty — skipped (configured silent).", role));
 			return;
+		}
 		IEntity copCar = GetOwner();
 		if (!copCar)
+		{
+			Print(string.Format("[RP_SpeedRadarLogic] %1 PlayLockSoundLocal: GetOwner()==null — radar beep skipped.", role), LogLevel.WARNING);
 			return;
+		}
+		Print(string.Format("[RP_SpeedRadarLogic] %1 PlayLockSoundLocal: entering. owner=%2 event='%3' — searching for RP_CopAudioComponent.",
+			role, GetOwnerPlate(copCar), m_sLockSoundEvent));
 		IEntity audioHost;
 		RP_CopAudioComponent sc = FindCopAudio(copCar, audioHost);
 		if (!sc)
 		{
-			Print("[RP_SpeedRadarLogic] No RP_CopAudioComponent found on cop car or its slot/child entities — radar beep skipped.", LogLevel.WARNING);
+			Print(string.Format("[RP_SpeedRadarLogic] %1 No RP_CopAudioComponent found on cop car or its slot/child entities — radar beep skipped.", role), LogLevel.WARNING);
 			return;
 		}
-		sc.SoundEvent(m_sLockSoundEvent);
+		AudioHandle h = sc.SoundEvent(m_sLockSoundEvent);
+		// AudioHandle.Invalid means the engine could not resolve the event
+		// (e.g. .acp bank not loaded on this peer, event name typo, or a
+		// malformed .acp). Either log path is informational once we're
+		// past the discovery phase — the radar is otherwise self-healing.
+		if (h == AudioHandle.Invalid)
+		{
+			Print(string.Format("[RP_SpeedRadarLogic] %1 SoundEvent('%2') returned AudioHandle.Invalid — event not resolved. No audio will play.",
+				role, m_sLockSoundEvent), LogLevel.WARNING);
+		}
+		else
+		{
+			Print(string.Format("[RP_SpeedRadarLogic] %1 SoundEvent('%2') issued — handle=%3 (valid).",
+				role, m_sLockSoundEvent, h));
+		}
+	}
+
+	// Looks up the vehicle's plate in the shared registry. Cop cars are
+	// registered as "PD_Car_N" by RP_CopVehicleSpawnerComponent; civs as
+	// "<faction>_Car_N" by the traffic loop. Falls back to "<unregistered>"
+	// for anything not in the registry (e.g. a manually-placed vehicle).
+	protected string GetOwnerPlate(IEntity ent)
+	{
+		if (!ent)
+			return "<null>";
+		RP_TrafficLoopComponent traffic = RP_TrafficLoopComponent.GetInstance();
+		if (traffic)
+		{
+			string plate = traffic.GetVehiclePlate(ent);
+			if (!plate.IsEmpty())
+				return plate;
+		}
+		return "<unregistered>";
+	}
+
+	// Compact "[server-dedi]" / "[server-host]" / "[client]" tag for log
+	// lines. Lets us tell at a glance which peer produced a diagnostic.
+	protected string RoleTag()
+	{
+		bool isServer = Replication.IsServer();
+		bool hasPC = GetGame().GetPlayerController() != null;
+		if (isServer && !hasPC)
+			return "[server-dedi]";
+		if (isServer && hasPC)
+			return "[server-host]";
+		return "[client]";
 	}
 
 	// Walks an entity, its plain children, and its SlotManagerComponent
@@ -522,6 +571,13 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	{
 		// POC stub — same as the old HUD path. Wire to a real watchlist
 		// later (server-side, since this lives here now).
+		//
+		// Future enhancement: filter out PD plates here (and in the cone
+		// scan in FindVehicleInCone). Today the cone scan excludes the
+		// cop's own car but not other cop cars in the registry, so a
+		// partner unit speeding past will lock and display its PD plate.
+		// Acceptable for now; revisit if it produces false positives once
+		// the watchlist is real.
 		return false;
 	}
 

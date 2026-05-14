@@ -137,7 +137,17 @@ class RP_CopVehicleSpawnerComponent : ScriptComponent
 			return;
 		}
 
-		Print(string.Format("[RP_CopVehicleSpawner] Dispensed %1 for %2 at %3.", entry.m_sPrefab, user, params.Transform[3]), LogLevel.NORMAL);
+		// Register a "PD_Car_N" plate in the shared plate registry so the
+		// radar / HUD / future systems can identify cop vehicles the same
+		// way they identify civ traffic. The PD counter is separate from
+		// civ faction counters (keyed "PD" instead of e.g. "US"). Safe to
+		// skip if the traffic loop isn't running on this map.
+		string plate;
+		RP_TrafficLoopComponent traffic = RP_TrafficLoopComponent.GetInstance();
+		if (traffic)
+			plate = traffic.AllocateAndRegisterPlate(vehicle, "PD");
+
+		Print(string.Format("[RP_CopVehicleSpawner] Dispensed %1 (plate=%2) for %3 at %4.", entry.m_sPrefab, plate, user, params.Transform[3]), LogLevel.NORMAL);
 	}
 
 	// Fills outTm with the world transform we should spawn at:

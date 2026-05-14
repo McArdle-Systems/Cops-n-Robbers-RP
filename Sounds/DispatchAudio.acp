@@ -285,7 +285,7 @@ AudioClass {
    version 5
    tl -669 -536
    curve "1/r"
-   EnableDirectivity 1
+   EnableDirectivity 0
   }
  }
  banks_local {
