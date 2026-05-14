@@ -183,7 +183,6 @@ AudioClass {
    outState 28683
    outStatePort 17415
    transformation Bone
-   boneName "v_light_switch"
    eventType "OnStart - Stop"
   }
   SoundClass "46089" {
@@ -219,7 +218,6 @@ AudioClass {
    outState 28683
    outStatePort 17415
    transformation Bone
-   boneName "v_light_switch"
    eventType "OnStart - Stop"
   }
   SoundClass "75785" {
