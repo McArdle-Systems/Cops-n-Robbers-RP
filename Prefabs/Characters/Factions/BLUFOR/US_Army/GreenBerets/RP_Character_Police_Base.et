@@ -69,5 +69,13 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
   }
   RP_PlayerRpcRelayComponent "{520ECCC0517E0001}" {
   }
+  RP_PlayerInventorySetupComponent "{520ECCC0517E0002}" {
+   m_aQuickSlotPins {
+    RP_QuickSlotPin "{520ECCC0517E0003}" {
+     m_sItemPrefabSuffix "ACE_Captives_ZipCuffs.et"
+     m_iQuickSlotIndex 9
+    }
+   }
+  }
  }
 }
