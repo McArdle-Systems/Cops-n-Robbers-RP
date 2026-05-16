@@ -2,17 +2,38 @@
 
 Arma Reforger mission. RP-style police / civilian sandbox.
 
-Design lives in `~/.openclaw/workspace-main/RP_MISSION_DESIGN.md` and `RP_DEPENDENCIES.md`.
+Design lives in [docs/CNR_2026_DESIGN.md](docs/CNR_2026_DESIGN.md)
+(current scope split into Phase 1 / 2 / 3). Earlier phase notes:
+`~/.openclaw/workspace-main/RP_MISSION_DESIGN.md`, `RP_DEPENDENCIES.md`.
 
 ## Status
 
-**Phase 0a (AI movement POC) is complete.** Infantry pathfinds, vehicle
-crews board and drive end-to-end on Arland. Past the original POC scope
-we shipped a real dispatch system: rebindable cursor-active popup, on-
-demand spawning by type, full state machine for the dispatch loop.
+**Phase 1 shipped 2026-05-16** — merged to `main` via PRs #6 and #11.
+What's in:
 
-See [docs/PHASE_0A_NOTES.md](docs/PHASE_0A_NOTES.md) for what shipped
-and what's next on the road to Phase 0 ("Living Town").
+- **Radar / speed detection** — vehicle-mounted speed radar with AG0
+  MFD screen (live page when HUD open, blank page when closed), peak/
+  lock flow, replicated speed signal.
+- **Yield-to-emergency** — civilian AI yields to cop cars with sirens
+  on. Snapshot/strip/restore waypoint preemption; ACE Captives arrest
+  path silent-releases without re-running the patrol cycle.
+- **Dispatch audio** through a physical radio prop (3D positional, not
+  2D HUD).
+- **Cop loadout polish** — ACE Captives ZipCuffs auto-wired into
+  quickslot 9 on cop spawn.
+- **Traffic-cap admin panel** injected into the pause menu.
+- Plus the dispatch system, custom inputs, and cop-car dispenser
+  carried over from Phase 0a.
+
+**Phase 2 — in progress (branch `feature/phase-2`).** LPR (license
+plate reader) scanning, watchlist match red-alerts, jail hold with
+automated release.
+
+**Phase 3 — planned.** Manual plate/ID lookup interface as fallback
+when LPR/radar don't trigger.
+
+Earlier phase status: see [docs/PHASE_0A_NOTES.md](docs/PHASE_0A_NOTES.md)
+for the AI-movement POC that came before Phase 1.
 
 ## What's in here
 
