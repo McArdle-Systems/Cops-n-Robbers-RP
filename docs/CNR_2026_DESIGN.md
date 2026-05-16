@@ -24,6 +24,8 @@ Booking** lifecycle on top of the existing dispatch system.
   - LPR (License Plate Reader) — scans plates of nearby vehicles.
   - Watchlist match — red-alert when an LPR scan hits a flagged plate.
   - Jail hold + automated release at end of timer.
+  - In-game chat — history panel + channels enabled (fix landed via
+    `ScriptedChatEntity` placement; see `CHAT_HUD_INVESTIGATION.md`).
 - **Phase 3 — planned.**
   - Manual lookup interface — officer-driven plate / ID lookup as a
     fallback when LPR / radar don't trigger.
