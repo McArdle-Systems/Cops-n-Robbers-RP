@@ -1,3 +1,7 @@
+GenericEntity : "{47F8D83F71EB2B74}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_02/LampStreet_E_02_addon.et" {
+ coords 3271.067 4.392 2885.676
+ angles 0 -125.707 0
+}
 GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
  components {
   RP_CopVehicleSpawnerComponent "{69562DEC1EDEDEA4}" {
