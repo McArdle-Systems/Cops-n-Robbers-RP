@@ -14,17 +14,25 @@
  * overlay.
  *
  * Visual mapping:
- *   OFF       : LED off, Screen MFD off, blinky despawned
- *   SCANNING  : LED on (steady, green idle / red on target), Screen MFD on, blinky despawned
- *   FLASHING  : LED rapid blink, Screen MFD on, blinky pulsing
- *   LOCKED    : LED rapid blink, Screen MFD on, blinky solid
+ *   OFF       : LED off, MFD on the Blank page (fully-black layout, no
+ *               text), blinky despawned.
+ *   SCANNING  : LED on (steady, green idle / red on target), MFD on the
+ *               RadarSpeed page showing live speed, blinky despawned.
+ *   FLASHING  : LED rapid blink, MFD on RadarSpeed page (frozen at
+ *               trigger speed), blinky pulsing.
+ *   LOCKED    : LED rapid blink, MFD on RadarSpeed page (peak speed),
+ *               blinky solid.
  *
- * MFD control:
- *   This component does NOT drive the MFD slot directly anymore. AG0's
- *   TogglePowerAction is a silent no-op when called from a non-server
- *   caller in this framework build (verified via dedi log), so the
- *   HUD now drives MFD power on the cop car directly via a server-
- *   routed RPC. See RP_SurveillanceHUDComponent.RequestRadarPower.
+ * MFD / screen:
+ *   This component does NOT drive the MFD slot directly. The MFD is
+ *   powered up at cop-car spawn (RP_CopVehicleSpawnerComponent.PowerOnRadarMFD)
+ *   and stays on for the life of the vehicle. Opening/closing the HUD
+ *   server-routes through RP_PlayerRpcRelayComponent.ApplyRadarPower,
+ *   which calls AG0_MFDManagerComponent.PageFunctionAction to flip the
+ *   slot between the Blank page (index 0) and the RadarSpeed page
+ *   (index 1). Material swaps on the screen mesh are off-limits —
+ *   SCR_Global.SetMaterial breaks AG0's $rendertarget binding (see
+ *   reforger_setmaterial_breaks_ag0_rt_binding memory).
  */
 
 enum ERP_RadarVisualState
@@ -35,7 +43,7 @@ enum ERP_RadarVisualState
 	LOCKED,
 }
 
-[ComponentEditorProps(category: "RP/Surveillance", description: "Visual driver for the SpeedRadar prop. Swaps LED material per state, spawns/despawns the blinky beacon, and toggles the parent vehicle's AG0 MFD slot 0 on/off in lock-step with the surveillance HUD.")]
+[ComponentEditorProps(category: "RP/Surveillance", description: "Visual driver for the SpeedRadar prop. Swaps LED material per state and spawns/despawns the blinky beacon. Screen content is driven by AG0 MFD via the radar_speed_kmh MP signal.")]
 class RP_SpeedRadarVisualComponentClass : ScriptComponentClass
 {
 }

@@ -43,6 +43,12 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 	[Attribute(defvalue: "0", desc: "MFD slot index on the cop vehicle to toggle for the radar screen.")]
 	protected int m_iRadarMFDSlotIndex;
 
+	[Attribute(defvalue: "0", desc: "Page index (in AG0_MFDSlotComponent.m_AvailablePages registration order) of the blank/dead-screen layout. Selected when the radar HUD is closed so the screen looks powered off.")]
+	protected int m_iRadarBlankPageIndex;
+
+	[Attribute(defvalue: "1", desc: "Page index (in AG0_MFDSlotComponent.m_AvailablePages registration order) of the live RadarSpeed layout. Selected when the radar HUD is open.")]
+	protected int m_iRadarSpeedPageIndex;
+
 	// Poll counter for late-join plate sync. Caps the wait at ~10s so
 	// remote-proxy instances (other players' characters on this client)
 	// don't poll forever.
@@ -124,9 +130,17 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 		ApplyRadarPower(rpl.GetEntity(), wantOn);
 	}
 
-	// Drives both the MFD screen power and the server-side radar logic
-	// in lockstep. Screen power is idempotent-checked against
-	// IsMFDOn; logic activation is idempotent inside SetActive itself.
+	// Drives the server-side radar logic (scan/state machine) and the
+	// MFD page selection. MFD screen *power* is no longer toggled here —
+	// it's powered up once at cop-car spawn (RP_CopVehicleSpawnerComponent)
+	// and stays on for the life of the vehicle. Reason: SCR_Global.SetMaterial
+	// breaks AG0's $rendertarget binding (see
+	// reforger_setmaterial_breaks_ag0_rt_binding), and powering the MFD
+	// off leaves the RT in a stale grey-glow state. Instead we keep the
+	// MFD on and swap between two AG0 pages — a blank/black layout when
+	// the radar HUD is closed and the live RadarSpeed layout when it's
+	// open — via AG0_MFDManagerComponent.PageFunctionAction. Page switch
+	// is server-only and AG0 fans the state to clients.
 	protected void ApplyRadarPower(IEntity copCar, bool wantOn)
 	{
 		if (!copCar)
@@ -136,9 +150,20 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 		{
 			Print(string.Format("[RP_RpcRelay] ApplyRadarPower: cop car %1 has no AG0_MFDManagerComponent.", copCar), LogLevel.WARNING);
 		}
-		else if (wantOn != mgr.IsMFDOn(m_iRadarMFDSlotIndex))
+		else
 		{
-			mgr.TogglePowerAction(m_iRadarMFDSlotIndex);
+			// Defensive lazy power-up: cop cars dispensed by the spawner
+			// are powered up at spawn, but editor-placed cars rely on
+			// this path. Idempotent against IsMFDOn.
+			if (wantOn && !mgr.IsMFDOn(m_iRadarMFDSlotIndex))
+				mgr.TogglePowerAction(m_iRadarMFDSlotIndex);
+			// Page switch — blank when HUD closed, live speed when open.
+			int targetPage;
+			if (wantOn)
+				targetPage = m_iRadarSpeedPageIndex;
+			else
+				targetPage = m_iRadarBlankPageIndex;
+			mgr.PageFunctionAction(m_iRadarMFDSlotIndex, targetPage);
 		}
 
 		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);

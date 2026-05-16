@@ -113,10 +113,30 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	// Lifecycle
 	// ----------------------------------------------------------------------
 
+	override void OnPostInit(IEntity owner)
+	{
+		super.OnPostInit(owner);
+		// Defer one frame so the cop car's SignalsManagerComponent and AG0
+		// MFD slot init have settled. Then publish a resting OFF snapshot
+		// from the server so the speed signal exists in the MP pool with
+		// value 0. Without this, the radar screen shows "inf km/h" between
+		// car spawn and the first time a cop opens the radar HUD — AG0
+		// renders FormatString-substituted "%1" as "inf" when the signal
+		// is unbound (see reforger_ag0_mfd_recipe).
+		GetGame().GetCallqueue().CallLater(PublishInitialSnapshot, 0, false);
+	}
+
 	override void OnDelete(IEntity owner)
 	{
 		GetGame().GetCallqueue().Remove(TickServer);
 		super.OnDelete(owner);
+	}
+
+	protected void PublishInitialSnapshot()
+	{
+		if (!Replication.IsServer())
+			return;
+		PublishSnapshot(ERP_RadarVisualState.OFF, 0, "—", false, false);
 	}
 
 	// ----------------------------------------------------------------------

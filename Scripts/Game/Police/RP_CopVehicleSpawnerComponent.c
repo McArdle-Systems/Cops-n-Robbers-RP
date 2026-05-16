@@ -147,7 +147,34 @@ class RP_CopVehicleSpawnerComponent : ScriptComponent
 		if (traffic)
 			plate = traffic.AllocateAndRegisterPlate(vehicle, "PD");
 
+		// Power the radar MFD slot on at spawn so the screen never shows
+		// its powered-off grey-glow baseline. The MFD layout (black
+		// background) renders into the rendertarget continuously; the
+		// radar logic component still controls whether scan data flows
+		// into the layout's text widget. Deferred one frame so AG0's
+		// slot init has completed on the newly-spawned vehicle.
+		GetGame().GetCallqueue().CallLater(PowerOnRadarMFD, 0, false, vehicle);
+
 		Print(string.Format("[RP_CopVehicleSpawner] Dispensed %1 (plate=%2) for %3 at %4.", entry.m_sPrefab, plate, user, params.Transform[3]), LogLevel.NORMAL);
+	}
+
+	// Server-only one-shot: powers the dispensed cop car's radar MFD slot
+	// on so the screen wears live AG0 output instead of the stale grey-
+	// glow baseline. TogglePowerAction is server-only and AG0 fans the
+	// state to clients; idempotent-checked against IsMFDOn here in case
+	// something else (e.g. an editor-placed car) has already powered up.
+	protected void PowerOnRadarMFD(IEntity vehicle)
+	{
+		if (!vehicle)
+			return;
+		AG0_MFDManagerComponent mgr = AG0_MFDManagerComponent.Cast(vehicle.FindComponent(AG0_MFDManagerComponent));
+		if (!mgr)
+		{
+			Print(string.Format("[RP_CopVehicleSpawner] PowerOnRadarMFD: vehicle %1 has no AG0_MFDManagerComponent — screen will sit at grey-glow baseline.", vehicle), LogLevel.WARNING);
+			return;
+		}
+		if (!mgr.IsMFDOn(0))
+			mgr.TogglePowerAction(0);
 	}
 
 	// Fills outTm with the world transform we should spawn at:
