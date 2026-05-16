@@ -142,6 +142,27 @@ State transitions:
      waypoint cleanup needed.
    - Lights flick off → on rapidly: claim is per-cop, so the existing
      STOPPED claim survives the flicker.
+   - **ACE Captives arrest during a yield.** ✅ **Handled.** When a cop
+     downs the yielded driver and ACE pops them out of the vehicle for
+     cuffing, `CheckReleases` would otherwise see the empty seat and
+     treat it as a bail — prepending a GetIn waypoint that the resulting
+     captive would then run to execute (cuffed AI sprinting back to its
+     own car, generating ACE warnings). Fix is three checks plus a
+     state-flag:
+       1. `IsAnyGroupAgentUnconscious` — `CharacterControllerComponent.GetLifeState() != ALIVE`
+          fires during the INCAPACITATED / DEAD window.
+       2. `IsAnyGroupAgentCaptive` — `SCR_CharacterControllerComponent.ACE_Captives_IsCaptive()`
+          (modded extension method, callable because ACE Captives is a
+          hard dependency) fires once the captive wakes up cuffed.
+       3. Either check sets `m_bArrestSilent` on the yield state and
+          short-circuits the bail path. EndYield then drops the saved
+          waypoint cycle entirely — without this last step, restoring
+          the cycle re-introduces the same GetIn (the civilian patrol
+          cycle already contains boarding waypoints), and the captive
+          still runs back to the seat. With it, the group ends up with
+          an empty queue and idles.
+     `EvaluateCandidate` also early-returns for groups with a downed
+     or cuffed member, so a new yield can't be initiated on a captive.
 
 ## Engine notes / risks
 

@@ -55,6 +55,13 @@ class RP_YieldedGroupState
 	// waypoints would be restored to a driverless vehicle and the AI
 	// would just stand there.
 	bool m_bDriverBailed;
+	// Set true if the release fired because a group member is being
+	// arrested (unconscious or already cuffed). EndYield skips BOTH
+	// the GetIn recovery AND the saved-waypoint restore — without
+	// dropping the restore, the captive's normal traffic cycle (which
+	// already contains its own boarding/drive waypoints) sends them
+	// running back to the wheel while cuffed.
+	bool m_bArrestSilent;
 }
 
 [ComponentEditorProps(category: "RP/Traffic", description: "Server-side yield-to-emergency-vehicle manager. Attach to the GameMode entity.")]
@@ -258,6 +265,11 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 			existing.m_fLastRefreshTime = GetWorldTimeSeconds();
 			return;
 		}
+		// Don't initiate a yield on a group with a downed or cuffed
+		// member — they're mid-arrest and we'd be queuing a Move
+		// waypoint that the captive can't (and shouldn't) execute.
+		if (IsAnyGroupAgentUnconscious(group) || IsAnyGroupAgentCaptive(group))
+			return;
 		BeginYield(group, vehicle, copCar, inFront, dist);
 	}
 
@@ -307,6 +319,28 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 		{
 			group.RemoveWaypoint(state.m_PullOverWaypoint);
 			SCR_EntityHelper.DeleteEntityAndChildren(state.m_PullOverWaypoint);
+		}
+
+		// Arrest path: don't restore the saved cycle. The civilian
+		// patrol cycle already contains GetIn + drive waypoints, so
+		// re-adding it sends the conscious-but-cuffed captive sprinting
+		// back to the wheel. Delete the orphaned waypoint entities so
+		// they don't leak — they're unreferenced once we skip the
+		// re-add.
+		if (state.m_bArrestSilent)
+		{
+			int dropped = 0;
+			foreach (AIWaypoint wp : state.m_aSavedWaypoints)
+			{
+				if (wp)
+				{
+					SCR_EntityHelper.DeleteEntityAndChildren(wp);
+					dropped++;
+				}
+			}
+			m_mYieldedGroups.Remove(group);
+			Print(string.Format("[RP_Yield] EndYield (arrest): %1 — dropped %2 saved waypoints, group will idle.", group, dropped), LogLevel.NORMAL);
+			return;
 		}
 
 		// If the driver bailed, prepend a GetIn so they walk back and
@@ -397,6 +431,34 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 			}
 			if (!FindDriverEntity(state.m_StoppedVehicle))
 			{
+				// Driver is no longer in the seat. Two reasons this
+				// happens: they bailed (walked away on their own), or a
+				// cop downed them and ACE Captives popped them out for
+				// arrest. The two paths diverge on whether we want a
+				// GetIn recovery — for a bail, yes; for an arrest, no
+				// (the captive would otherwise run back to re-board
+				// their own car while cuffed, generating ACE warnings).
+				// Discriminator: if any agent in the group is currently
+				// unconscious or already cuffed, this is the arrest path —
+				// silent release. ACE's downed→cuffed transition passes
+				// through unconscious, so the lifestate check usually fires
+				// first; the captive check covers the case where the
+				// transition is fast enough that we observe it post-cuff,
+				// or where ACE cuffs without an unconscious phase.
+				if (IsAnyGroupAgentUnconscious(group))
+				{
+					Print(string.Format("[RP_Yield] Driver of %1 went unconscious (likely ACE arrest) — silent release, no GetIn, dropping saved cycle.", state.m_StoppedVehicle), LogLevel.NORMAL);
+					state.m_bArrestSilent = true;
+					toRelease.Insert(group);
+					continue;
+				}
+				if (IsAnyGroupAgentCaptive(group))
+				{
+					Print(string.Format("[RP_Yield] Driver of %1 is cuffed (ACE captive) — silent release, no GetIn, dropping saved cycle.", state.m_StoppedVehicle), LogLevel.NORMAL);
+					state.m_bArrestSilent = true;
+					toRelease.Insert(group);
+					continue;
+				}
 				Print(string.Format("[RP_Yield] Driver bailed from %1 — releasing yield, will prepend GetIn.", state.m_StoppedVehicle), LogLevel.WARNING);
 				state.m_bDriverBailed = true;
 				toRelease.Insert(group);
@@ -583,6 +645,69 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 			child = child.GetSibling();
 		}
 		return null;
+	}
+
+	// Walks the group's AI agents and returns true if any of their
+	// controlled characters is currently not ALIVE (INCAPACITATED or
+	// DEAD). Used to discriminate "driver bailed on their own" from
+	// "cop downed/killed the driver for arrest" — the latter shouldn't
+	// trigger GetIn bail recovery because the driver is about to become
+	// an ACE Captive and shouldn't run back to their vehicle. We can't
+	// query ACE captive state directly (ACE doesn't expose its
+	// component class to our project), but ACE's arrest flow always
+	// passes through unconscious first, so catching INCAPACITATED here
+	// silences the bail path before the GetIn is ever queued. DEAD
+	// catches the outright-killed case (we don't want to march a corpse
+	// back to the seat either).
+	protected bool IsAnyGroupAgentUnconscious(SCR_AIGroup group)
+	{
+		if (!group)
+			return false;
+		array<AIAgent> agents = {};
+		group.GetAgents(agents);
+		foreach (AIAgent agent : agents)
+		{
+			if (!agent)
+				continue;
+			IEntity character = agent.GetControlledEntity();
+			if (!character)
+				continue;
+			CharacterControllerComponent ctl = CharacterControllerComponent.Cast(character.FindComponent(CharacterControllerComponent));
+			if (!ctl)
+				continue;
+			ECharacterLifeState life = ctl.GetLifeState();
+			if (life != ECharacterLifeState.ALIVE)
+				return true;
+		}
+		return false;
+	}
+
+	// Cross-mod check for ACE Captives cuffed state. ACE patches
+	// SCR_CharacterControllerComponent with ACE_Captives_IsCaptive(), so
+	// we don't need to reference any ACE component classes directly (the
+	// project depends on ACE Captives, so the modded method is always
+	// present). Complements IsAnyGroupAgentUnconscious for the case where
+	// the captive has already woken up cuffed by the time we evaluate.
+	protected bool IsAnyGroupAgentCaptive(SCR_AIGroup group)
+	{
+		if (!group)
+			return false;
+		array<AIAgent> agents = {};
+		group.GetAgents(agents);
+		foreach (AIAgent agent : agents)
+		{
+			if (!agent)
+				continue;
+			SCR_ChimeraCharacter character = SCR_ChimeraCharacter.Cast(agent.GetControlledEntity());
+			if (!character)
+				continue;
+			SCR_CharacterControllerComponent ctl = SCR_CharacterControllerComponent.Cast(character.GetCharacterController());
+			if (!ctl)
+				continue;
+			if (ctl.ACE_Captives_IsCaptive())
+				return true;
+		}
+		return false;
 	}
 
 	protected IEntity FindDriverEntityRecursive(IEntity entity)
