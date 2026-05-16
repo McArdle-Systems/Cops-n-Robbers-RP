@@ -3,6 +3,10 @@ GenericEntity {
  components {
   AG0_MFDSlotComponent "{6952279F3CEF0682}" {
    m_AvailablePages {
+    AG0_MFDPageType "{6952279F3CEF0685}" {
+     PageLayoutPath "{6951140EE0F0A002}UI/layouts/MFD_RadarBlank.layout"
+     PageName "Blank"
+    }
     AG0_MFDPageType "{6952279F3CEF0683}" {
      PageLayoutPath "{6951140EE0F0A001}UI/layouts/MFD_RadarScreen.layout"
      PageName "RadarSpeed"
