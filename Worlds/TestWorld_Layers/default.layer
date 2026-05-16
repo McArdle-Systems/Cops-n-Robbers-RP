@@ -1,30 +1,54 @@
-SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
+GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
  components {
-  NavmeshWorldComponent "{5584F30E67F617AD}" {
-   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
-    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A2995A7E8BC2}" {
-     NavmeshFile "{7C88BFD1B7872B44}Worlds/Navmesh/Arland_Soldiers.nmn"
+  RP_CopVehicleSpawnerComponent "{69562DEC1EDEDEA4}" {
+   m_aVehiclePrefabs {
+    RP_CopVehicleEntry "{69562DEC1D871A2B}" {
+     m_sPrefab "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/RP_Suburban_police.et"
+     m_sDisplayName "Suburban (Police)"
+    }
+   }
+   m_sSpawnPointEntityName "SpawnPoint_Police_Vehicles"
+   m_vLocalSpawnOffset 0 0 0
+   m_aAllowedFactionKeys {
+    "Police"
+   }
+  }
+  ActionsManagerComponent "{69562DECEA2DF68C}" {
+   ActionContexts {
+    UserActionContext "{69562DECE937B84C}" {
+     UIInfo SCR_ActionUIInfo "{69562DECA639546B}" {
+      Name "Spawn Cop Car"
+     }
+     ContextName "police_car_spawner"
+     Position PointInfo "{69562DECA2F3C5B7}" {
+     }
+     Radius 1
+    }
+   }
+   additionalActions {
+    RP_SpawnCopVehicleUserAction "{69562DECD44D32CE}" {
+     ParentContextList {
+      "police_car_spawner"
+     }
+     UIInfo SCR_ActionUIInfo "{69562DECD847BBD4}" {
+      Name "Spawn Cop Car"
+     }
+     VisibilityRange 10
     }
    }
   }
-  NavmeshWorldComponent "{5584F30EEFEE1223}" {
-   NavmeshSettings ChimeraNavmeshWorld "{50FC63BEBE3973C5}" {
-    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A299509CF377}" {
-     NavmeshFile "{90312AE0DA7555E3}Worlds/Navmesh/Arland_BTRLike.nmn"
-    }
-   }
-  }
-  NavmeshWorldComponent "{5C8C9B750D124A63}" {
-   NavmeshSettings NavmeshWorld "{5C8C9B750B60C6E2}" {
-    NavmeshFilesConfig BaseNavmeshFilesConfig "{5C90B7788942D4B8}" {
-     NavmeshFile "{90D6AB3C14C79A15}Worlds/Navmesh/Arland_LowRes.nmn"
-    }
-   }
+  RplComponent "{5624A88DC2D9928D}" {
+   Enabled 1
   }
  }
- coords 1425.364 39 2777.679
+ coords 3270.64 3.175 2885.832
+ angles 0 -125.44 0
 }
-Vehicle Suburban_police1 : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et" {
- coords 3267.245 1.964 2914.296
- angles 0 -125.071 0
+GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
+ coords 3271.147 2 2884.765
+ angles 0 -123.44 0
+}
+SCR_DestructibleBuildingEntity Police_HQ : "{C914CC910842E973}Prefabs/Structures/Services/Government/police_101.et" {
+ coords 3281.939 -0.001 2881.914
+ angles 0 54.757 0
 }

@@ -1,0 +1,46 @@
+OverlayWidgetClass {
+ Name "RadarRTRoot"
+ {
+  RTTextureWidgetClass "{8C0F3E120000A010}" {
+   Name "RTSurface"
+   Slot OverlayWidgetSlot "{6950D603E549254F}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+   }
+   "render always" 1
+   {
+    OverlayWidgetClass "{8C0F3E120000A050}" {
+     Name "RTOverlay"
+     {
+      ImageWidgetClass "{8C0F3E120000A051}" {
+       Name "BgFill"
+       Slot OverlayWidgetSlot "{8C0F3E120000A052}" {
+        HorizontalAlign 3
+        VerticalAlign 3
+       }
+       Color 1 0 1 1
+      }
+      VerticalLayoutWidgetClass "{8C0F3E120000A030}" {
+       Name "RTContent"
+       Slot OverlayWidgetSlot "{8C0F3E120000A053}" {
+        HorizontalAlign 1
+        VerticalAlign 1
+       }
+       {
+        TextWidgetClass "{8C0F3E120000A001}" {
+         Name "SpeedText"
+         Slot LayoutSlot "{6950D603E549253D}" {
+          HorizontalAlign 1
+         }
+         Color 1 1 1 1
+         Text "DEBUG"
+         "Font Size" 100
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

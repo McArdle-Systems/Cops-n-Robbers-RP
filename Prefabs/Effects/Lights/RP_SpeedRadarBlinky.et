@@ -1,0 +1,11 @@
+GenericEntity : "{9E34EB64F298D7D9}Prefabs/Structures/Core/LightSourceVisualization_base.et" {
+ ID "6F8B2A7C5D193E05"
+ components {
+  LightSourceVisualizationObject "{5A02839A0D5BE210}" {
+   Material "{256A40F608390FD8}Common/Materials/LightSourceVisualization/LightSourceVisualization_base.emat"
+   Size 0.04
+   Color 1 0 0 0
+   LV 14
+  }
+ }
+}

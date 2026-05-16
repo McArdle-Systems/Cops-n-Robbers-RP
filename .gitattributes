@@ -21,6 +21,7 @@
 *.txo binary
 *.meta binary
 *.et binary
+*.acp binary
 
 # Navmesh
 *.nmn binary

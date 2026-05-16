@@ -1,0 +1,28 @@
+GenericEntity {
+ ID "7B4D8A3F2E195D02"
+ components {
+  AG0_MFDSlotComponent "{6952279F3CEF0682}" {
+   m_AvailablePages {
+    AG0_MFDPageType "{6952279F3CEF0683}" {
+     PageLayoutPath "{6951140EE0F0A001}UI/layouts/MFD_RadarScreen.layout"
+     PageName "RadarSpeed"
+     TextWidgets {
+      AG0_MFDTextConfig "{6952279F3CEF0684}" {
+       WidgetName "SpeedText"
+       SignalName "radar_speed_kmh"
+       FormatString "%1 km/h"
+       FloorValue 1
+       DecimalPlaces 0
+      }
+     }
+    }
+   }
+  }
+  MeshObject "7B4D8A3F2E195D03" {
+   Object "{5E56963F26D15552}Assets/Models/SpeedRadarV2/SpeedRadarScreen.xob"
+  }
+  Hierarchy "7B4D8A3F2E195D04" {
+  }
+ }
+ coords 0 0 0
+}

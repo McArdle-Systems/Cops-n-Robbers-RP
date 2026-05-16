@@ -1,0 +1,86 @@
+OverlayWidgetClass {
+ Name "RootOverlay"
+ {
+  ImageWidgetClass "{60B1C0A100001001}" {
+   Name "Dimmer"
+   Slot OverlayWidgetSlot "{60B1C0A100001002}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+   }
+   Color 0 0 0 0.55
+  }
+  VerticalLayoutWidgetClass "{60B1C0A100001003}" {
+   Name "PanelLayout"
+   Slot OverlayWidgetSlot "{60B1C0A100001004}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+    Padding 32 32 32 32
+   }
+   {
+    TextWidgetClass "{60B1C0A100001005}" {
+     Name "TitleLine"
+     Slot LayoutSlot "{60B1C0A100001006}" {
+      HorizontalAlign 3
+     }
+    }
+    TextWidgetClass "{60B1C0A100001010}" {
+     Name "SubtitleLine"
+     Slot LayoutSlot "{60B1C0A100001011}" {
+      HorizontalAlign 3
+      Padding 0 8 0 0
+     }
+    }
+    HorizontalLayoutWidgetClass "{60B1C0A100001020}" {
+     Name "ValueRow"
+     Slot LayoutSlot "{60B1C0A100001021}" {
+      HorizontalAlign 3
+      Padding 0 24 0 0
+     }
+     {
+      ButtonWidgetClass "{60B1C0A100001022}" : "{75C912A1C89BE6C2}UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout" {
+       Name "MinusButton"
+       Slot LayoutSlot "{60B1C0A100001023}" {
+        VerticalAlign 3
+       }
+       components {
+        SCR_ButtonTextComponent "{60B1C0A100001024}" {
+         m_sText "-"
+        }
+       }
+      }
+      TextWidgetClass "{60B1C0A100001025}" {
+       Name "ValueText"
+       Slot LayoutSlot "{60B1C0A100001026}" {
+        VerticalAlign 3
+        Padding 32 0 32 0
+       }
+      }
+      ButtonWidgetClass "{60B1C0A100001027}" : "{75C912A1C89BE6C2}UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout" {
+       Name "PlusButton"
+       Slot LayoutSlot "{60B1C0A100001028}" {
+        VerticalAlign 3
+       }
+       components {
+        SCR_ButtonTextComponent "{60B1C0A100001029}" {
+         m_sText "+"
+        }
+       }
+      }
+     }
+    }
+    ButtonWidgetClass "{60B1C0A100001030}" : "{75C912A1C89BE6C2}UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout" {
+     Name "CloseButton"
+     Slot LayoutSlot "{60B1C0A100001031}" {
+      HorizontalAlign 3
+      Padding 0 32 0 0
+     }
+     components {
+      SCR_ButtonTextComponent "{60B1C0A100001032}" {
+       m_sText "Close"
+      }
+     }
+    }
+   }
+  }
+ }
+}

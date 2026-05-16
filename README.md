@@ -30,6 +30,25 @@ and what's next on the road to Phase 0 ("Living Town").
   follows the player on a configurable timer for movement validation
   testing. Standalone from the dispatch system; useful for navmesh
   smoke tests in new worlds.
+- **`RP_CopVehicleSpawnerComponent`** + **`RP_SpawnCopVehicleUserAction`**
+  — interactable cop-car dispenser. Place the component (plus an
+  `ActionsManagerComponent` containing the user action, plus an
+  `RplComponent`) on any kiosk-like entity. Configure:
+    - `m_aVehiclePrefabs` — array of dispensable vehicle prefabs
+      (currently dispenses entry [0]; array shape leaves room for a
+      future selection UI).
+    - `m_sSpawnPointEntityName` — name of a separate placed entity
+      whose transform is used as the spawn pad (position + rotation).
+      Falls back to the component's owner transform + a local offset
+      if empty / not found.
+    - `m_aAllowedFactionKeys` — faction-key gate (empty = anyone).
+      Backed by `FactionAffiliationComponent.GetAffiliatedFactionKey`
+      on the activating user.
+    - `m_fOccupancyRadius` — sphere check at the spawn pad refuses
+      dispatch if any `Vehicle` is inside. Prevents stacking cars.
+  The action's `CanBePerformedScript` surfaces refusal reasons
+  (`"Police only."`, `"Spawn pad is occupied."`) to the prompt UI so
+  the player sees the gate, not a silent no-op.
 
 ## Setup in Workbench
 
@@ -71,6 +90,9 @@ Configs/System/                 chimeraInputCommon, chimeraMenus,
 Scripts/Game/AI/                Phase 0a POC component (auto-follow)
 Scripts/Game/Dispatch/          Dispatch system (manager, units, HUD,
                                 spawn point component, popup menu)
+Scripts/Game/Police/            Cop vehicle spawner (kiosk-style
+                                dispenser with faction gate +
+                                occupancy check)
 Prefabs/AI/Groups/              Custom group prefabs (police, etc.)
 UI/                             Dispatch popup .layout
 Missions/                       Mission scaffolding

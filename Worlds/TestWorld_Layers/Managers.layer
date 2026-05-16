@@ -1,3 +1,29 @@
+SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
+ components {
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A2995A7E8BC2}" {
+     NavmeshFile "{7C88BFD1B7872B44}Worlds/Navmesh/Arland_Soldiers.nmn"
+    }
+   }
+  }
+  NavmeshWorldComponent "{5584F30EEFEE1223}" {
+   NavmeshSettings ChimeraNavmeshWorld "{50FC63BEBE3973C5}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{60B8A299509CF377}" {
+     NavmeshFile "{90312AE0DA7555E3}Worlds/Navmesh/Arland_BTRLike.nmn"
+    }
+   }
+  }
+  NavmeshWorldComponent "{5C8C9B750D124A63}" {
+   NavmeshSettings NavmeshWorld "{5C8C9B750B60C6E2}" {
+    NavmeshFilesConfig BaseNavmeshFilesConfig "{5C90B7788942D4B8}" {
+     NavmeshFile "{90D6AB3C14C79A15}Worlds/Navmesh/Arland_LowRes.nmn"
+    }
+   }
+  }
+ }
+ coords 1425.364 39 2777.679
+}
 SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Factions/FactionManager_Base.et" {
  coords 1442.722 39 2758.387
  Factions {
@@ -9,31 +35,66 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
   }
  }
 }
-SCR_BaseGameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/GameMode_Deathmatch_Automatic.et" {
+RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMode_Deathmatch_Automatic.et" {
  components {
-  RP_DispatchHUDComponent "{6947307143D0241A}" {
+  RP_DispatchHUDComponent "{694E1EEC91BD294F}" {
    m_sDispatchType "Police"
   }
-  RP_DispatchManagerComponent "{6947252510116F23}" {
+  RP_DispatchManagerComponent "{694E1EEC96FBEFCD}" {
    m_aDefinitions {
-    RP_DispatchGroupDefinition "{694725250CBCEA8B}" {
+    RP_DispatchGroupDefinition "{694E1EEC893828AC}" {
      m_sTypeTag "Police"
      m_sCrewGroupPrefab "{A9B3913BCB259F0F}Prefabs/AI/Groups/RP_Police_Group_1.et"
      m_sVehiclePrefab "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et"
-     m_sSpawnPointName "SpawnPoint_Police"
+     m_sSpawnPointName "SpawnPoint_Police_AI"
      m_fLoiterSeconds 10
-     m_fApproachRadiusMeters 13
-     m_fBoardingTimeSeconds 2
-     m_fDismountTimeSeconds 30
-     m_fCleanupTimeoutSeconds 30
     }
    }
    m_sMoveWaypointPrefab "{750A8D1695BD6998}Prefabs/AI/Waypoints/AIWaypoint_Move.et"
    m_sGetInWaypointPrefab "{712F4795CF8B91C7}Prefabs/AI/Waypoints/AIWaypoint_GetIn.et"
    m_sGetOutWaypointPrefab "{C40316EE26846CAB}Prefabs/AI/Waypoints/AIWaypoint_GetOut.et"
   }
+  RP_EmergencyYieldComponent "{6954445E52367962}" {
+   m_fBackRadiusMeters 25
+  }
+  RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
+   m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
+  }
+  RP_TrafficLoopComponent "{694E1EF5FFBE5B61}" {
+   m_aSpawnConfigs {
+    RP_TrafficSpawnConfig "{69544423D9636B9F}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{C7CE8044B5E301F5}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_transport_CIV_randomized.et"
+    }
+    RP_TrafficSpawnConfig "{69561E30EB15E3DB}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{57A441224AC02CF3}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_covered_CIV_Randomized.et"
+    }
+    RP_TrafficSpawnConfig "{69561E30DA5BE26F}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{767D49C35F87DC1A}Prefabs/Vehicles/Wheeled/UAZ452/UAZ452_cargo_CIV_randomized.et"
+    }
+    RP_TrafficSpawnConfig "{69561E30DA138345}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{1B0D46B41C50873D}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_uncovered_CIV_Randomized.et"
+    }
+    RP_TrafficSpawnConfig "{69561E30D9EBD9D3}" {
+     m_sGroupPrefab "{0BDE6E799CFF2E22}Prefabs/AI/Groups/RP_CIV_Group_1.et"
+     m_sVehiclePrefab "{DCAF0585D17B917A}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_tanker_CIV_randomized.et"
+    }
+   }
+   m_iTargetActiveCount 10
+   m_fSpawnIntervalSeconds 3
+   m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
+  }
+  RP_VehicleHighlightComponent "{694E1EF60A20F900}" {
+   m_fLifetimeSec 0
+   m_sLightPrefab "{A4FE19D3B7C42501}Prefabs/Effects/Lights/RP_HighlightLight.et"
+   m_vLightOffset 0 2.952 0
+  }
  }
- coords 1447.893 39 2767.548
+ coords 3259.196 2.003 2888.64
+ PlayerControllerPrefab "{A1AE127F16DD352E}Prefabs/Characters/Core/DefaultPlayerControllerMP_Factions.et"
 }
 RadioManagerEntity RadioManager : "{B8E09FAB91C4ECCD}Prefabs/Systems/Radio/RadioManager.et" {
  coords 1412.994 39 2798.212

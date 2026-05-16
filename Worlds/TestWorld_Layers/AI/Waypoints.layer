@@ -1,0 +1,46 @@
+$grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ wp_1_4 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF6F4F7ED51}" {
+    m_eType WAYPOINT
+    m_iIndex 4
+   }
+  }
+  coords 3240.994 5.585 2831.868
+ }
+ wp_1_3 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF6F1B1FD9F}" {
+    m_eType WAYPOINT
+    m_iIndex 3
+   }
+  }
+  coords 3232.995 19.444 2693.697
+ }
+ wp_1_2 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60DD170BA}" {
+    m_eType WAYPOINT
+    m_iIndex 2
+   }
+  }
+  coords 3097.213 27.468 2572.387
+ }
+ wp_1_1 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60182008F}" {
+    m_eType WAYPOINT
+   }
+  }
+  coords 3049.676 25.519 2599.632
+ }
+ wp_1_5 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF6F96568EA}" {
+    m_eType WAYPOINT
+    m_iIndex 5
+   }
+  }
+  coords 3163.408 11.595 2783.473
+ }
+}

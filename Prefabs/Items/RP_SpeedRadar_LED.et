@@ -1,0 +1,17 @@
+GenericEntity {
+ ID "7B4D8A3F2E195C02"
+ components {
+  MeshObject "7B4D8A3F2E195C03" {
+   Object "{1E21C7E54BCBA536}Assets/Models/SpeedRadarV2/SpeedRadarLED.xob"
+   Materials {
+    MaterialAssignClass "{69513B96E13F2D1F}" {
+     SourceMaterial "SpeedRadar_LED"
+     AssignedMaterial "{195BFF99B5195C3A}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Off.emat"
+    }
+   }
+  }
+  Hierarchy "7B4D8A3F2E195C04" {
+  }
+ }
+ coords 0 0 0
+}

@@ -29,10 +29,13 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
    m_fChanceOfIdentityDocumentBeingValuable 1
   }
   CharacterWeaponSlotComponent "{520EA1D2F659CFAB}" {
+   WeaponTemplate "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
+  }
+  CharacterWeaponSlotComponent "{520EA1D2F659CFB7}" {
    WeaponTemplate "{92A0764C4EDF7C14}Prefabs/Weapons/Rifles/M16/Variants/Rifle_M16A2_carbine_OliveGreen_Solid.et"
   }
   CharacterWeaponSlotComponent "{520EA1D2F659CFDC}" {
-   WeaponTemplate "{1353C6EAD1DCFE43}Prefabs/Weapons/Handguns/M9/Handgun_M9.et"
+   WeaponTemplate "{E245F7E9B1EA660B}Prefabs/Weapons/Handguns/M9/Handgun_Taser.et"
   }
   BaseLoadoutManagerComponent "{520EA1D2DB11821E}" {
    Slots {
@@ -56,7 +59,15 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
       "{47E8493B6C6767C7}Prefabs/Items/Equipment/Radios/RP_Radio_ANPRC68.et" "{61D4F80E49BF9B12}Prefabs/Items/Equipment/Compass/Compass_SY183.et" "{922F95F91943F69A}Prefabs/Items/Equipment/Maps/Map_Paper_01/PaperMap_01_folded_US.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{D70216B1B2889129}Prefabs/Items/Medicine/Tourniquet_01/Tourniquet_US_01.et" "{0D9A5DCF89AE7AA9}Prefabs/Items/Medicine/MorphineInjection_01/MorphineInjection_01.et" "{6E35D94130954509}Prefabs/Items/Equipment/Accessories/ETool_ALICE/ETool_ALICE_FreeRoamBuilding_Gadget.et" "{756231FF84F158A4}Prefabs/Weapons/Flares/FlareStarParachute_M126A1_red.et" "{51D9E3AEC8476BA4}Prefabs/Weapons/Flares/FlareStarParachute_M195_green.et"
      }
     }
+    ItemsInitConfigurationItem "{694E1EE168E2D6D9}" {
+     TargetStorage "Vest/Equip.et"
+     PrefabsToSpawn {
+      "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et"
+     }
+    }
    }
+  }
+  RP_PlayerRpcRelayComponent "{520ECCC0517E0001}" {
   }
  }
 }

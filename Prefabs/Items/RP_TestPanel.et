@@ -1,0 +1,28 @@
+GenericEntity : "{3A91334C5569E834}Prefabs/Structures/BuildingParts/Eletrical/CabinetElectricalLargeSet_01/CabinetElectricalLargeSet_01_EndPanel.et" {
+ ID "5111E74D4E7A8DB6"
+ components {
+  AG0_MFDSlotComponent "{6952279787121073}" {
+   m_AvailablePages {
+    AG0_MFDPageType "{6952279789D82383}" {
+     PageLayoutPath "{D4239649A1DBB305}UI/layouts/RP_MFD_Base.layout"
+     PageName "POC_Page"
+     TextWidgets {
+      AG0_MFDTextConfig "{6952279675007C7F}" {
+       WidgetName "TestText"
+       FormatString "SOME TEXT"
+      }
+     }
+    }
+   }
+  }
+  MeshObject "{5111E74D5E891458}" {
+   Materials {
+    MaterialAssignClass "{6952279584D23FBB}" {
+     SourceMaterial "CabinetElectricalLarge_01_8A1DE695910F5619"
+     AssignedMaterial "{8C0F3E120000A520}Assets/Models/SpeedRadarV2/Data/RTTest_Surface.emat"
+    }
+   }
+  }
+ }
+ coords 3267.643 2 2905.643
+}

@@ -1,0 +1,97 @@
+AudioClass {
+ sounds {
+  SoundClass "4105" {
+   id 4105
+   name "SOUND_RADAR_BEEPING"
+   version 5
+   tl -6.718 355.699
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "1042:65" {
+       id 1042
+       port 65
+      }
+     }
+    }
+   }
+  }
+ }
+ shaders {
+  ShaderClass "1042" {
+   id 1042
+   name "Spatial Shader"
+   version 5
+   tl -328.427 356.035
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "3100:65" {
+       id 3100
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "2067:65" {
+       id 2067
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "5124:65" {
+       id 5124
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+ }
+ amplitudes {
+  AmplitudeClass "2067" {
+   id 2067
+   name "Amplitude 10"
+   version 5
+   tl -655.317 157.737
+   curve "1/r"
+   EnableDirectivity 0
+  }
+ }
+ banks_local {
+  BankLocalClass "5124" {
+   id 5124
+   name "Bank 21"
+   version 7
+   tl -706.449 356.748
+   Samples {
+    AudioBankSampleClass "beeping.wav" {
+     Filename "{3A2967AF92F1AE80}Assets/Audio/beeping.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+ }
+ spatialities {
+  SpatialityClass "3100" {
+   id 3100
+   name "Spatiality 11"
+   version 5
+   tl -651.607 63.899
+   spatialFactor 1
+  }
+ }
+ version 1
+}

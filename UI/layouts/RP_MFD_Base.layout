@@ -1,0 +1,47 @@
+FrameWidgetClass {
+ Name "rootFrame"
+ {
+  RTTextureWidgetClass "{69522797B2DBCDE6}" {
+   Name "RTTexture0"
+   Slot FrameWidgetSlot "{6292C9F015F09E00}" {
+    OffsetLeft 0
+    OffsetTop 0
+    SizeX 512
+    OffsetRight -512
+    SizeY 682
+    OffsetBottom -682
+   }
+   Color 0 0 0 1
+   {
+    FrameWidgetClass "{69522796CAD382CF}" {
+     Name "Frame0"
+     Slot FrameWidgetSlot "{69522796CAD382FD}" {
+      OffsetLeft 0
+      OffsetTop 0
+      SizeX 512
+      OffsetRight -512
+      SizeY 682
+      OffsetBottom -682
+     }
+     Color 0 0 0 1
+     {
+      TextWidgetClass "{69522797A51EF8C6}" {
+       Name "TestText"
+       Slot FrameWidgetSlot "{69522797A51EF8E9}" {
+        OffsetLeft 0
+        OffsetTop 0
+        SizeX 512
+        OffsetRight -512
+        SizeY 200
+        OffsetBottom -200
+       }
+       Color 1 1 1 1
+       Text "POC"
+       "Font Size" 200
+      }
+     }
+    }
+   }
+  }
+ }
+}

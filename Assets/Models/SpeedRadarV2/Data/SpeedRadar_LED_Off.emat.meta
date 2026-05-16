@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{195BFF99B5195C3A}Assets/Models/SpeedRadarV2/Data/SpeedRadar_LED_Off.emat"
+ Configurations {
+  EMATResourceClass PC {
+  }
+  EMATResourceClass XBOX_ONE : PC {
+  }
+  EMATResourceClass XBOX_SERIES : PC {
+  }
+  EMATResourceClass PS4 : PC {
+  }
+  EMATResourceClass PS5 : PC {
+  }
+  EMATResourceClass HEADLESS : PC {
+  }
+ }
+}
