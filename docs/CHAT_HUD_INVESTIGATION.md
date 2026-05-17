@@ -13,7 +13,7 @@
 - World wires the PlayerController prefab in `Worlds/TestWorld_Layers/Managers.layer:97` to `Prefabs/Characters/Core/DefaultPlayerControllerMP_Factions.et` — our local override (added in commit `75f0f90`, "Add PC _Factions variant + workshop thumbnail").
 - That override is **thin**: it only adds `SCR_SpawnerRequestComponent`, inheriting everything else from stock `DefaultPlayerControllerMP.et`. **It does not add any chat HUD entry.**
 - **User confirmed in this session: the `_Factions` swap did not fix chat.** So the parent prefab also lacks a chat history HUD entry (or has it gated somehow).
-- GameMode inheritance: `RP_GameMode_Deathmatch_Automatic.et` → stock `GameMode_Deathmatch_Base.et`. The issue notes that **stock Deathmatch HUD is intentionally minimal (kill feed, timer, scoreboard) — Conflict mode is the known-good reference for a chat-visible HUD.**
+- GameMode inheritance (at time of investigation): `RP_GameMode_Deathmatch_Automatic.et` → stock `GameMode_Deathmatch_Base.et`. The issue notes that **stock Deathmatch HUD is intentionally minimal (kill feed, timer, scoreboard) — Conflict mode is the known-good reference for a chat-visible HUD.** *(Post-fix update 2026-05-16: base mode swapped to `RP_GameMode_TeamDeathmatch_Auto.et` → stock `GameMode_TeamDeathmatch_Auto.et`; chat continues to work because the fix was placing `ScriptedChatEntity` in the world, not the HUD chain.)*
 
 ## What's been investigated
 

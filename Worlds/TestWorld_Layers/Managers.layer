@@ -24,18 +24,7 @@ SCR_AIWorld AIWorld : "{01DC74137CFDDB6A}Prefabs/AI/SCR_AIWorld_Arland.et" {
  }
  coords 1425.364 39 2777.679
 }
-SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Factions/FactionManager_Base.et" {
- coords 1442.722 39 2758.387
- Factions {
-  SCR_Faction "{69461B82E7D9E8F0}" {
-   FactionKey "Police"
-   UIInfo SCR_FactionUIInfo "{69461B82E42F242A}" {
-    Name "Police Force"
-   }
-  }
- }
-}
-RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMode_Deathmatch_Automatic.et" {
+SCR_BaseGameMode GameMode : "{9732FEC6934145B0}Prefabs/MP/Modes/TeamDeathmatch/RP_GameMode_TeamDeathmatch_Auto.et" {
  components {
   RP_DispatchHUDComponent "{694E1EEC91BD294F}" {
    m_sDispatchType "Police"
@@ -93,8 +82,319 @@ RP_GameMode GameMode : "{B00D51315A1C7150}Prefabs/MP/Modes/Deathmatch/RP_GameMod
    m_vLightOffset 0 2.952 0
   }
  }
- coords 3259.196 2.003 2888.64
+ coords 3262.28 2.233 2876.784
  PlayerControllerPrefab "{A1AE127F16DD352E}Prefabs/Characters/Core/DefaultPlayerControllerMP_Factions.et"
+}
+SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Factions/FactionManager_Base.et" {
+ coords 1442.722 39 2758.387
+ Factions {
+  SCR_Faction "{69461B82E7D9E8F0}" {
+   FactionKey "Police"
+   UIInfo SCR_FactionUIInfo "{69461B82E42F242A}" {
+    Name "Police Force"
+   }
+   m_aEntityCatalogs {
+    SCR_EntityCatalog "{69604ABE79EF7B35}" {
+     m_eEntityCatalogType ITEM
+     m_aEntityEntryList {
+      SCR_EntityCatalogEntry "{8C0F3E1200001001}" {
+       m_sEntityPrefab "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001101}" {
+         m_eItemMode WEAPON
+         m_iSupplyCost 0
+         m_ItemResourceName "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001002}" {
+       m_sEntityPrefab "{E245F7E9B1EA660B}Prefabs/Weapons/Handguns/M9/Handgun_Taser.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001102}" {
+         m_eItemType PISTOL
+         m_eItemMode WEAPON
+         m_iSupplyCost 0
+         m_ItemResourceName "{E245F7E9B1EA660B}Prefabs/Weapons/Handguns/M9/Handgun_Taser.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001003}" {
+       m_sEntityPrefab "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001103}" {
+         m_eItemMode AMMUNITION
+         m_iSupplyCost 0
+         m_ItemResourceName "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001004}" {
+       m_sEntityPrefab "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001104}" {
+         m_eItemType PISTOL
+         m_eItemMode AMMUNITION
+         m_iSupplyCost 0
+         m_ItemResourceName "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001005}" {
+       m_sEntityPrefab "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001105}" {
+         m_eItemType NON_LETHAL_THROWABLE
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001006}" {
+       m_sEntityPrefab "{47E8493B6C6767C7}Prefabs/Items/Equipment/Radios/RP_Radio_ANPRC68.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001106}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{47E8493B6C6767C7}Prefabs/Items/Equipment/Radios/RP_Radio_ANPRC68.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001007}" {
+       m_sEntityPrefab "{922F95F91943F69A}Prefabs/Items/Equipment/Maps/Map_Paper_01/PaperMap_01_folded_US.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001107}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{922F95F91943F69A}Prefabs/Items/Equipment/Maps/Map_Paper_01/PaperMap_01_folded_US.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001008}" {
+       m_sEntityPrefab "{756231FF84F158A4}Prefabs/Weapons/Flares/FlareStarParachute_M126A1_red.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001108}" {
+         m_eItemType NON_LETHAL_THROWABLE
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{756231FF84F158A4}Prefabs/Weapons/Flares/FlareStarParachute_M126A1_red.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001009}" {
+       m_sEntityPrefab "{51D9E3AEC8476BA4}Prefabs/Weapons/Flares/FlareStarParachute_M195_green.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001109}" {
+         m_eItemType NON_LETHAL_THROWABLE
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{51D9E3AEC8476BA4}Prefabs/Weapons/Flares/FlareStarParachute_M195_green.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100A}" {
+       m_sEntityPrefab "{C76BCE70CD525E5B}Cop/Equip.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110A}" {
+         m_eItemType VEST_AND_WAIST
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{C76BCE70CD525E5B}Cop/Equip.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100B}" {
+       m_sEntityPrefab "{9EFCF1035423B5E3}Cop/ShirtCop.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110B}" {
+         m_eItemType TORSO
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{9EFCF1035423B5E3}Cop/ShirtCop.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100C}" {
+       m_sEntityPrefab "{2CA92E210658D49A}Prefabs/Weapons/Magazines/Internal Mags (Do not use)/Internal_mag_Buckshot_m870_LL.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110C}" {
+         m_eItemType MORTARS
+         m_eItemMode PYLON
+         m_iSupplyCost 0
+         m_ItemResourceName "{2CA92E210658D49A}Prefabs/Weapons/Magazines/Internal Mags (Do not use)/Internal_mag_Buckshot_m870_LL.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100D}" {
+       m_sEntityPrefab "{92A0764C4EDF7C14}Prefabs/Weapons/Rifles/M16/Variants/Rifle_M16A2_carbine_OliveGreen_Solid.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110D}" {
+         m_eItemMode WEAPON
+         m_iSupplyCost 0
+         m_ItemResourceName "{92A0764C4EDF7C14}Prefabs/Weapons/Rifles/M16/Variants/Rifle_M16A2_carbine_OliveGreen_Solid.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100E}" {
+       m_sEntityPrefab "{0CF54B9A85D8E0D4}Prefabs/Items/Equipment/Binoculars/Binoculars_M22/Binoculars_M22.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110E}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{0CF54B9A85D8E0D4}Prefabs/Items/Equipment/Binoculars/Binoculars_M22/Binoculars_M22.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000100F}" {
+       m_sEntityPrefab "{61D4F80E49BF9B12}Prefabs/Items/Equipment/Compass/Compass_SY183.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000110F}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{61D4F80E49BF9B12}Prefabs/Items/Equipment/Compass/Compass_SY183.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001010}" {
+       m_sEntityPrefab "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001110}" {
+         m_eItemType HEAL
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001011}" {
+       m_sEntityPrefab "{D70216B1B2889129}Prefabs/Items/Medicine/Tourniquet_01/Tourniquet_US_01.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001111}" {
+         m_eItemType HEAL
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{D70216B1B2889129}Prefabs/Items/Medicine/Tourniquet_01/Tourniquet_US_01.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001012}" {
+       m_sEntityPrefab "{0D9A5DCF89AE7AA9}Prefabs/Items/Medicine/MorphineInjection_01/MorphineInjection_01.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001112}" {
+         m_eItemType HEAL
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{0D9A5DCF89AE7AA9}Prefabs/Items/Medicine/MorphineInjection_01/MorphineInjection_01.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001013}" {
+       m_sEntityPrefab "{3A421547BC29F679}Prefabs/Items/Equipment/Flashlights/Flashlight_MX991/Flashlight_MX991.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001113}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{3A421547BC29F679}Prefabs/Items/Equipment/Flashlights/Flashlight_MX991/Flashlight_MX991.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001014}" {
+       m_sEntityPrefab "{D8F2CA92583B23D3}Prefabs/Weapons/Magazines/Magazine_556x45_STANAG_30rnd_M855_M856_Last_5Tracer.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001114}" {
+         m_eItemMode AMMUNITION
+         m_iSupplyCost 0
+         m_ItemResourceName "{D8F2CA92583B23D3}Prefabs/Weapons/Magazines/Magazine_556x45_STANAG_30rnd_M855_M856_Last_5Tracer.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001015}" {
+       m_sEntityPrefab "{9DB69176CEF0EE97}Prefabs/Weapons/Grenades/Smoke_ANM8HC.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001115}" {
+         m_eItemType NON_LETHAL_THROWABLE
+         m_eItemMode CONSUMABLE
+         m_iSupplyCost 0
+         m_ItemResourceName "{9DB69176CEF0EE97}Prefabs/Weapons/Grenades/Smoke_ANM8HC.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001017}" {
+       m_sEntityPrefab "{203EEA924B049EF1}Prefabs/Characters/Footwear/JungleBoots_01/JungleBoots_01.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001117}" {
+         m_eItemType FOOTWEAR
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{203EEA924B049EF1}Prefabs/Characters/Footwear/JungleBoots_01/JungleBoots_01.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001018}" {
+       m_sEntityPrefab "{D19C474FA0F42CC4}Prefabs/Characters/Handwear/Gloves_Pilot_US_01/Gloves_Pilot_US_01.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001118}" {
+         m_eItemType HANDWEAR
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{D19C474FA0F42CC4}Prefabs/Characters/Handwear/Gloves_Pilot_US_01/Gloves_Pilot_US_01.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001019}" {
+       m_sEntityPrefab "{78ED4FEF62BBA728}Prefabs/Items/Equipment/Watches/Watch_SandY184A.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001119}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{78ED4FEF62BBA728}Prefabs/Items/Equipment/Watches/Watch_SandY184A.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000101A}" {
+       m_sEntityPrefab "{604BB72BE8E023C2}Prefabs/Characters/Uniforms/Pants_US_BDU.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000111A}" {
+         m_eItemType LEGS
+         m_eItemMode ATTACHMENT
+         m_iSupplyCost 0
+         m_ItemResourceName "{604BB72BE8E023C2}Prefabs/Characters/Uniforms/Pants_US_BDU.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000101B}" {
+       m_sEntityPrefab "{E7FF723379730BD5}Prefabs/Items/PersonalBelongings/PersonalBelongings_CIV.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000111B}" {
+         m_eItemType EQUIPMENT
+         m_eItemMode DEFAULT
+         m_iSupplyCost 0
+         m_ItemResourceName "{6676FF9B716402CC}Prefabs/Items/PersonalBelongings/PersonalBelongings_US.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E120000101C}" {
+       m_sEntityPrefab "{7EFA6626171FBAAD}Prefabs/Weapons/Ammo/Ammo_12ga_buckshot_12_in_barrel_beanbag.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E120000111C}" {
+         m_eItemType MORTARS
+         m_eItemMode PYLON
+         m_iSupplyCost 0
+         m_ItemResourceName "{7EFA6626171FBAAD}Prefabs/Weapons/Ammo/Ammo_12ga_buckshot_12_in_barrel_beanbag.et"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
 }
 RadioManagerEntity RadioManager : "{B8E09FAB91C4ECCD}Prefabs/Systems/Radio/RadioManager.et" {
  coords 1412.994 39 2798.212
