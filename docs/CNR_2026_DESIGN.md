@@ -15,7 +15,7 @@ Booking** lifecycle on top of the existing dispatch system.
     flow). See `RP_SpeedRadar*Component` and the page-swap pattern
     captured in `reforger_setmaterial_breaks_ag0_rt_binding`.
   - ACE Captives cuff quickslot wiring on cop spawn
-    (`RP_GameMode.OnPlayerSpawned`).
+    (`RP_PlayerInventorySetupComponent` on the cop character prefab).
   - Yield-to-emergency for civilian AI (not originally in this doc;
     added during Phase 1). See `YIELD_TO_EMERGENCY_TASKS.md`.
   - Dispatch audio through a physical radio prop.
@@ -44,5 +44,6 @@ Booking** lifecycle on top of the existing dispatch system.
 - ACE-Captives-driven arrest loop. *(Phase 1 — cuff quickslot wired;
   arrest UX inherited from ACE Captives.)*
   - Cuffs sourced from `ACE_Captives_ZipCuffs.et` (already wired into
-    cop loadout via `RP_GameMode.OnPlayerSpawned` quickslot setup).
+    cop loadout via `RP_PlayerInventorySetupComponent` quickslot
+    setup on the cop character prefab).
 - Jail hold with **automated release** at end of timer. *(Phase 2)*

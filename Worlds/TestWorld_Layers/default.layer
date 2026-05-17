@@ -52,6 +52,17 @@ GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelepho
  coords 3271.147 2 2884.765
  angles 0 -123.44 0
 }
+GenericEntity : "{BE99D77D1155B127}Prefabs/Props/Military/Arsenal/ArsenalBoxes/US/ArsenalBox_US.et" {
+ components {
+  SCR_ArsenalComponent "{56F2C6D1431AD9AF}" {
+   m_eSupportedArsenalItemTypes 7340030
+  }
+  SCR_FactionAffiliationComponent "{5A50E7655452A21D}" {
+   "faction affiliation" "Police"
+  }
+ }
+ coords 3270.932 2.042 2882.374
+}
 SCR_DestructibleBuildingEntity Police_HQ : "{C914CC910842E973}Prefabs/Structures/Services/Government/police_101.et" {
  coords 3281.939 -0.001 2881.914
  angles 0 54.757 0

@@ -12,6 +12,16 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
     }
    }
   }
+  RP_PlayerInventorySetupComponent "{520ECCC0517E0002}" {
+   m_aQuickSlotPins {
+    RP_QuickSlotPin "{520ECCC0517E0003}" {
+     m_sItemPrefabSuffix "ACE_Captives_ZipCuffs.et"
+     m_iQuickSlotIndex 9
+    }
+   }
+  }
+  RP_PlayerRpcRelayComponent "{520ECCC0517E0001}" {
+  }
   SCR_EditableCharacterComponent "{520EA1D2F659C85C}" {
    m_UIInfo SCR_EditableEntityUIInfo "{5298E609432D192D}" {
     Name "#AR-Role_GreenBeret_Officer"
@@ -27,6 +37,9 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
   SCR_ExtendedCharacterIdentityComponent "{5AEEA3C8B2AA118B}" {
    m_iMaxRandomAge 32
    m_fChanceOfIdentityDocumentBeingValuable 1
+  }
+  CharacterGrenadeSlotComponent "{520EA1D2F659CE6E}" {
+   WeaponTemplate ""
   }
   CharacterWeaponSlotComponent "{520EA1D2F659CFAB}" {
    WeaponTemplate "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
@@ -56,7 +69,12 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
    InitialInventoryItems {
     ItemsInitConfigurationItem "{5D7CAAFB9235E902}" {
      PrefabsToSpawn {
-      "{47E8493B6C6767C7}Prefabs/Items/Equipment/Radios/RP_Radio_ANPRC68.et" "{61D4F80E49BF9B12}Prefabs/Items/Equipment/Compass/Compass_SY183.et" "{922F95F91943F69A}Prefabs/Items/Equipment/Maps/Map_Paper_01/PaperMap_01_folded_US.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{D70216B1B2889129}Prefabs/Items/Medicine/Tourniquet_01/Tourniquet_US_01.et" "{0D9A5DCF89AE7AA9}Prefabs/Items/Medicine/MorphineInjection_01/MorphineInjection_01.et" "{6E35D94130954509}Prefabs/Items/Equipment/Accessories/ETool_ALICE/ETool_ALICE_FreeRoamBuilding_Gadget.et" "{756231FF84F158A4}Prefabs/Weapons/Flares/FlareStarParachute_M126A1_red.et" "{51D9E3AEC8476BA4}Prefabs/Weapons/Flares/FlareStarParachute_M195_green.et"
+      "{47E8493B6C6767C7}Prefabs/Items/Equipment/Radios/RP_Radio_ANPRC68.et" "{61D4F80E49BF9B12}Prefabs/Items/Equipment/Compass/Compass_SY183.et" "{922F95F91943F69A}Prefabs/Items/Equipment/Maps/Map_Paper_01/PaperMap_01_folded_US.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{A81F501D3EF6F38E}Prefabs/Items/Medicine/FieldDressing_01/FieldDressing_US_01.et" "{D70216B1B2889129}Prefabs/Items/Medicine/Tourniquet_01/Tourniquet_US_01.et" "{0D9A5DCF89AE7AA9}Prefabs/Items/Medicine/MorphineInjection_01/MorphineInjection_01.et" "{756231FF84F158A4}Prefabs/Weapons/Flares/FlareStarParachute_M126A1_red.et" "{51D9E3AEC8476BA4}Prefabs/Weapons/Flares/FlareStarParachute_M195_green.et"
+     }
+    }
+    ItemsInitConfigurationItem "{60E69A2DF2E7E070}" {
+     PrefabsToSpawn {
+      "{D8F2CA92583B23D3}Prefabs/Weapons/Magazines/Magazine_556x45_STANAG_30rnd_M855_M856_Last_5Tracer.et" "{D8F2CA92583B23D3}Prefabs/Weapons/Magazines/Magazine_556x45_STANAG_30rnd_M855_M856_Last_5Tracer.et" "{D8F2CA92583B23D3}Prefabs/Weapons/Magazines/Magazine_556x45_STANAG_30rnd_M855_M856_Last_5Tracer.et" ""
      }
     }
     ItemsInitConfigurationItem "{694E1EE168E2D6D9}" {
@@ -64,16 +82,6 @@ SCR_ChimeraCharacter : "{894628A45793E7A0}Prefabs/Characters/Factions/BLUFOR/US_
      PrefabsToSpawn {
       "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et" "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et"
      }
-    }
-   }
-  }
-  RP_PlayerRpcRelayComponent "{520ECCC0517E0001}" {
-  }
-  RP_PlayerInventorySetupComponent "{520ECCC0517E0002}" {
-   m_aQuickSlotPins {
-    RP_QuickSlotPin "{520ECCC0517E0003}" {
-     m_sItemPrefabSuffix "ACE_Captives_ZipCuffs.et"
-     m_iQuickSlotIndex 9
     }
    }
   }
