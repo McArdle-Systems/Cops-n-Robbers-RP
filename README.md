@@ -25,9 +25,22 @@ What's in:
 - Plus the dispatch system, custom inputs, and cop-car dispenser
   carried over from Phase 0a.
 
-**Phase 2 — in progress (branch `feature/phase-2`).** LPR (license
-plate reader) scanning, watchlist match red-alerts, jail hold with
-automated release.
+**Phase 2 — in progress.** What's in:
+
+- **LPR / watchlist match** — `RP_PlateWatchlistComponent` on the
+  GameMode (server-only) holds flagged plates and auto-budgets to a
+  configurable percent of active traffic (default 5%, floor 1).
+  Radar `IsPlateFlagged()` consults it; SCANNING -> FLASHING triggers
+  on speed OR plate match, with per-lock fired flags so a plate-only
+  lock picks up a delayed speed beep if the target later starts
+  speeding. HUD adds independent `SPEEDING` and `WATCHLIST` badges
+  so you can tell overspeed / LPR hit / both apart at a glance. LPR
+  hit also pops a hint popup with the plate for the cop driver only.
+  *(Shipped 2026-05-18 via PR #19, branch `feature/lpr-watchlist`.)*
+
+What's left in Phase 2:
+
+- **Jail hold + automated release** at end of timer.
 
 **Phase 3 — planned.** Manual plate/ID lookup interface as fallback
 when LPR/radar don't trigger.
@@ -51,6 +64,27 @@ for the AI-movement POC that came before Phase 1.
   follows the player on a configurable timer for movement validation
   testing. Standalone from the dispatch system; useful for navmesh
   smoke tests in new worlds.
+- **`RP_SpeedRadarLogicComponent`** — server-authoritative radar on
+  the cop vehicle. Cone scan (default 22.5° half-angle, 50 m) picks
+  the closest target each tick; SCANNING -> FLASHING transition on
+  speed overshoot OR plate watchlist hit; per-lock fired flags so
+  each alert sound fires at most once per lock cycle. Speed display
+  is peak-tracking for speed-locks and live-instant for plate-only
+  locks. Broadcasts a per-tick snapshot (state + speed + plate +
+  lockReason bitmask); HUD and visual component read it.
+- **`RP_SurveillanceHUDComponent`** — toggleable cop-driver HUD
+  overlay (default key `]`, action `RP_ToggleSurveillance`). Reads
+  the radar's snapshot, renders the SPEED / PLATE fields and the
+  independent `SPEEDING` / `WATCHLIST` badges, and fires the LPR
+  hit popup on watch-bit raised. Display-only; the server drives
+  everything.
+- **`RP_PlateWatchlistComponent`** — server-only watchlist on the
+  GameMode. Storage + `IsWatched` / `AddWatch` / `RemoveWatch` /
+  `MatchPartial` / `MaintainBudget`. `m_fBudgetPercent` (default
+  0.05) and `m_iMinBudget` (default 1) tune the auto-budget;
+  `m_aInitialWatchPlates` hand-pins specific plates. Traffic loop
+  calls `MaintainBudget` after any pool change (admin cap change,
+  spawn, prune).
 - **`RP_CopVehicleSpawnerComponent`** + **`RP_SpawnCopVehicleUserAction`**
   — interactable cop-car dispenser. Place the component (plus an
   `ActionsManagerComponent` containing the user action, plus an
@@ -114,6 +148,11 @@ Scripts/Game/Dispatch/          Dispatch system (manager, units, HUD,
 Scripts/Game/Police/            Cop vehicle spawner (kiosk-style
                                 dispenser with faction gate +
                                 occupancy check)
+Scripts/Game/Surveillance/      Radar logic + visuals, watchlist,
+                                surveillance HUD, MFD helpers, RPC
+                                relay
+Scripts/Game/Traffic/           Traffic loop, plate registry, yield-
+                                to-emergency, driver compliance
 Prefabs/AI/Groups/              Custom group prefabs (police, etc.)
 UI/                             Dispatch popup .layout
 Missions/                       Mission scaffolding
