@@ -475,13 +475,13 @@ Vehicle : "{33AB44A084BAA0CD}Prefabs/Vehicles/Wheeled/M998/M1025_base.et" {
      PivotID "v_body"
      Offset -0.09 0.8399 1.0879
      Angles 0 -165.1198 0
-     Prefab "{9E591E6A616C89B4}Prefabs/Items/SpeedRadar.et"
+     Prefab "{9E591E6A616C89B4}Prefabs/Items/RP_SpeedRadar.et"
     }
     RegisteringComponentSlotInfo SpeedRadarScreen {
      PivotID "v_body"
      Offset -0.09 0.9717 1.0879
      Angles 0 -165.1198 180
-     Prefab "{7B4D8A3F2E195D01}Prefabs/Items/SpeedRadar_Screen.et"
+     Prefab "{7B4D8A3F2E195D01}Prefabs/Items/RP_SpeedRadar_Screen.et"
     }
    }
   }

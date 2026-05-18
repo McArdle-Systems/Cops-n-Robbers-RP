@@ -17,6 +17,23 @@ AudioClass {
     }
    }
   }
+  SoundClass "8201" {
+   id 8201
+   name "SOUND_RADAR_LPR_HIT"
+   version 5
+   tl -7.146 504.832
+   ins {
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "9234:65" {
+       id 9234
+       port 65
+      }
+     }
+    }
+   }
+  }
  }
  shaders {
   ShaderClass "1042" {
@@ -46,8 +63,46 @@ AudioClass {
     ConnectionsClass "con:64" {
      id 64
      links {
-      ConnectionClass "5124:65" {
-       id 5124
+      ConnectionClass "6148:65" {
+       id 6148
+       port 65
+      }
+     }
+    }
+   }
+   pi {
+    3 0
+   }
+  }
+  ShaderClass "9234" {
+   id 9234
+   name "Spatial Shader"
+   version 5
+   tl -328.854 505.168
+   ins {
+    ConnectionsClass "con:0" {
+     id 0
+     links {
+      ConnectionClass "3100:65" {
+       id 3100
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:1" {
+     id 1
+     links {
+      ConnectionClass "2067:65" {
+       id 2067
+       port 65
+      }
+     }
+    }
+    ConnectionsClass "con:64" {
+     id 64
+     links {
+      ConnectionClass "7172:65" {
+       id 7172
        port 65
       }
      }
@@ -65,18 +120,31 @@ AudioClass {
    version 5
    tl -655.317 157.737
    curve "1/r"
-   EnableDirectivity 0
   }
  }
  banks_local {
-  BankLocalClass "5124" {
-   id 5124
-   name "Bank 21"
+  BankLocalClass "6148" {
+   id 6148
+   name "Speed Beep"
    version 7
-   tl -706.449 356.748
+   tl -651 372
    Samples {
     AudioBankSampleClass "beeping.wav" {
-     Filename "{3A2967AF92F1AE80}Assets/Audio/beeping.wav"
+     Filename "{3A2967AF92F1AE80}Assets/Audio/RadarLPR/beeping.wav"
+     Probability 100
+     Index 0
+     SampleMetadata ""
+    }
+   }
+  }
+  BankLocalClass "7172" {
+   id 7172
+   name "LPR Hit"
+   version 7
+   tl -646 508
+   Samples {
+    AudioBankSampleClass "license plate.wav" {
+     Filename "{BA058C102861E3FF}Assets/Audio/RadarLPR/license plate.wav"
      Probability 100
      Index 0
      SampleMetadata ""
