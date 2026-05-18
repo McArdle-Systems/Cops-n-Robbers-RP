@@ -71,7 +71,7 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	[Attribute(defvalue: "SOUND_RADAR_BEEPING", desc: "Sound event for the speed-lock alert. Fires once when the target first crosses the speed limit (including delayed firing if the target was already plate-locked and only later started speeding). Empty = silent. Played 3D positional from the SpeedRadar prop's RP_CopAudioComponent on every client.")]
 	protected string m_sLockSoundEvent;
 
-	[Attribute(defvalue: "SOUND_RADAR_LPR_HIT", desc: "Sound event for the LPR / watchlist hit. Fires once when the target is first recognized as a watched plate. Independent of the speed lock — both sounds can fire in sequence (e.g. plate hit first, then they start speeding). Empty = silent. Played 3D positional from the SpeedRadar prop's RP_CopAudioComponent on every client.")]
+	[Attribute(defvalue: "SOUND_RADAR_LPR_HIT", desc: "Sound event for the LPR / watchlist hit. Fires once when the target is first recognized as a watched plate. Independent of the speed lock — when a watched plate is also speeding, both sounds trigger on the same tick and play in parallel. Empty = silent. Played 3D positional from the SpeedRadar prop's RP_CopAudioComponent on every client.")]
 	protected string m_sLPRHitSoundEvent;
 
 	// Lock-reason bitmask. Used in both the per-lock 'has-fired' tracking
