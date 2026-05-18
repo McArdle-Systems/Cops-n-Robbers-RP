@@ -212,6 +212,10 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		}
 		if (culled > 0)
 			Print(string.Format("[RP_Traffic] Culled %1 active vehicle(s) to honor lowered cap.", culled), LogLevel.NORMAL);
+
+		// Pool size just changed — rebalance the LPR watchlist against
+		// the new active set (drop orphans, top up to ~5% of pool).
+		NotifyWatchlistOfPoolChange();
 	}
 
 	// Despawns the most-recently-spawned entry. Mirrors PruneDead's
@@ -346,9 +350,19 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 	protected void SpawnTick()
 	{
+		int beforePrune = m_aActiveSpawns.Count();
 		PruneDead();
+		int afterPrune = m_aActiveSpawns.Count();
+		int beforeSpawn = afterPrune;
 		if (m_aActiveSpawns.Count() < m_iTargetActiveCount)
 			TrySpawnOne();
+		int afterSpawn = m_aActiveSpawns.Count();
+
+		// Rebalance the LPR watchlist if the live pool changed this tick
+		// (vehicle pruned, vehicle spawned, or both). A no-op tick is the
+		// common case — skip the work in that case.
+		if (afterPrune != beforePrune || afterSpawn != beforeSpawn)
+			NotifyWatchlistOfPoolChange();
 	}
 
 	// Drops entries whose vehicle has been destroyed (wreckage) or
@@ -730,6 +744,38 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		string plate = string.Format("%1_Car_%2", factionKey, next);
 		RegisterPlate(vehicle, plate);
 		return plate;
+	}
+
+	// Server-only. Snapshots the plates of currently active spawns into
+	// outPlates. Consumed by RP_PlateWatchlistComponent.MaintainBudget
+	// to keep its watchlist scoped to live vehicles. Cheap — a copy of
+	// strings, called only on pool-change events.
+	void GetActivePlates(out array<string> outPlates)
+	{
+		if (!outPlates)
+			return;
+		outPlates.Clear();
+		foreach (RP_TrafficActiveSpawn entry : m_aActiveSpawns)
+		{
+			if (entry && !entry.m_sName.IsEmpty())
+				outPlates.Insert(entry.m_sName);
+		}
+	}
+
+	// Server-only. Pushes the current active plate set to the watchlist
+	// so it can re-budget. Called from SetTargetActiveCount and SpawnTick
+	// only when the pool composition actually changed. Safe no-op if the
+	// watchlist component isn't present.
+	protected void NotifyWatchlistOfPoolChange()
+	{
+		if (!Replication.IsServer())
+			return;
+		RP_PlateWatchlistComponent watchlist = RP_PlateWatchlistComponent.GetInstance();
+		if (!watchlist)
+			return;
+		array<string> active = {};
+		GetActivePlates(active);
+		watchlist.MaintainBudget(active);
 	}
 
 	// HUD/etc. call this with a (possibly remote-proxy) vehicle entity.

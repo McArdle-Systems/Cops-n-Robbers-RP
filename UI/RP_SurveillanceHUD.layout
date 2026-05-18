@@ -9,6 +9,23 @@ OverlayWidgetClass {
     Padding 0 32 0 0
    }
    {
+    HorizontalLayoutWidgetClass "{8C0F3E1200000515}" {
+     Name "BadgesRow"
+     Slot LayoutSlot "{8C0F3E1200000516}" {
+      HorizontalAlign 1
+     }
+     {
+      TextWidgetClass "{8C0F3E1200000517}" {
+       Name "SpeedingBadge"
+       Slot LayoutSlot "{8C0F3E1200000518}" {
+        Padding 0 0 16 0
+       }
+      }
+      TextWidgetClass "{8C0F3E1200000519}" {
+       Name "WatchlistBadge"
+      }
+     }
+    }
     HorizontalLayoutWidgetClass "{8C0F3E1200000500}" {
      Name "FieldsRow"
      Slot LayoutSlot "{8C0F3E1200000514}" {

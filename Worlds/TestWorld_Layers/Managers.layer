@@ -46,6 +46,9 @@ SCR_BaseGameMode GameMode : "{9732FEC6934145B0}Prefabs/MP/Modes/TeamDeathmatch/R
   RP_EmergencyYieldComponent "{6954445E52367962}" {
    m_fBackRadiusMeters 25
   }
+  RP_PlateWatchlistComponent "{694E1EF60A1CB001}" {
+   m_fBudgetPercent 0.25
+  }
   RP_SurveillanceHUDComponent "{694E1EF60A1C7B40}" {
    m_sLayoutPath "{AB95DA9834D81521}UI/RP_SurveillanceHUD.layout"
   }

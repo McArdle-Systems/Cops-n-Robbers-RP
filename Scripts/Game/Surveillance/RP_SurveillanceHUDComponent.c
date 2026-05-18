@@ -119,6 +119,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	// LOCK indicator).
 	protected ERP_RadarVisualState m_eLastState = ERP_RadarVisualState.OFF;
 
+	// Last seen lockReason bitmask — used to fire the LPR hint popup
+	// exactly once per "plate bit raised" transition (not every tick
+	// while the bit stays set).
+	protected int m_iLastLockReason;
+
 	// Flash-animation runtime
 	protected bool m_bFlashTickRunning;
 	protected bool m_bFlashOn;
@@ -205,7 +210,11 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			SetText("LockIndicator", "LOCK");
 			SetText("SpeedLabel", "SPEED");
 			SetText("PlateLabel", "PLATE");
+			SetText("SpeedingBadge", "SPEEDING");
+			SetText("WatchlistBadge", "WATCHLIST");
 			SetWidgetColor("LockIndicator", 0xFFFF0000);
+			SetWidgetColor("SpeedingBadge", 0xFFFF0000);
+			SetWidgetColor("WatchlistBadge", 0xFFFF0000);
 		}
 		ResetDisplay();
 		m_wRoot.SetVisible(true);
@@ -255,7 +264,10 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		SetFieldVisible("Speed", true);
 		SetFieldVisible("Plate", true);
 		SetWidgetVisible("LockIndicator", false);
+		SetWidgetVisible("SpeedingBadge", false);
+		SetWidgetVisible("WatchlistBadge", false);
 		m_eLastState = ERP_RadarVisualState.OFF;
+		m_iLastLockReason = 0;
 	}
 
 	protected void Tick()
@@ -288,7 +300,9 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		float speed = logic.GetSnapshotSpeed();
 		string plate = logic.GetSnapshotPlate();
 		bool hasTarget = logic.GetSnapshotHasTarget();
-		bool plateFlagged = logic.GetSnapshotPlateFlagged();
+		int lockReason = logic.GetSnapshotLockReason();
+		bool isSpeeding = logic.GetSnapshotIsSpeeding();
+		bool isWatchHit = logic.GetSnapshotIsWatchHit();
 
 		// Transition side-effects: blink + LOCK indicator.
 		if (state != m_eLastState)
@@ -313,6 +327,21 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			m_eLastState = state;
 		}
 
+		// LPR hit popup. Fire exactly once per "plate bit raised"
+		// transition — i.e. the watchlist bit went from 0 to 1 since
+		// the last tick. This catches both initial plate-only locks
+		// and speed-then-plate locks (rare but possible if the radar
+		// somehow flagged a plate mid-lock).
+		bool watchBitBefore = (m_iLastLockReason & RP_SpeedRadarLogicComponent.LOCK_REASON_PLATE) != 0;
+		if (isWatchHit && !watchBitBefore)
+			ShowLPRHitPopup(plate, logic);
+		m_iLastLockReason = lockReason;
+
+		// Per-channel badge visibility — independent of state, driven
+		// purely by which lock-reason bits are set.
+		SetWidgetVisible("SpeedingBadge", isSpeeding);
+		SetWidgetVisible("WatchlistBadge", isWatchHit);
+
 		// Refresh text + colors every tick from the snapshot. Server has
 		// already frozen values during FLASHING/LOCKED so we don't need
 		// to special-case here.
@@ -329,16 +358,22 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 					SetText("SpeedValue", "—");
 					SetText("PlateValue", "—");
 				}
+				// In SCANNING, the lock-reason bits are always 0 (any
+				// flagged plate triggers an immediate transition out).
+				// Keep the field colors white.
 				SetFieldRed("Speed", false);
-				SetFieldRed("Plate", plateFlagged);
+				SetFieldRed("Plate", false);
 				break;
 
 			case ERP_RadarVisualState.FLASHING:
 			case ERP_RadarVisualState.LOCKED:
 				SetText("SpeedValue", string.Format("%1 km/h", Math.Round(speed)));
 				SetText("PlateValue", plate);
-				SetFieldRed("Speed", true);
-				SetFieldRed("Plate", true);
+				// Per-channel red: speed field red iff overspeed alert
+				// has fired this lock, plate field red iff watchlist
+				// alert has fired this lock. Both red == double trigger.
+				SetFieldRed("Speed", isSpeeding);
+				SetFieldRed("Plate", isWatchHit);
 				break;
 
 			default:
@@ -350,6 +385,29 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 				SetFieldRed("Plate", false);
 				break;
 		}
+	}
+
+	// Pops a stock SCR_HintManagerComponent custom hint announcing the
+	// watchlist hit. The hint is local to the cop driver — this code
+	// path only runs in the surveillance HUD overlay, which is itself
+	// gated on "seated in a police vehicle" (see GetPlayerCopVehicle),
+	// so passengers / non-cops never see it.
+	//
+	// First-light: hint surfaces only the plate. Vehicle type / color
+	// would need plumbing through the snapshot (the radar holds the
+	// strong-ref to the locked entity server-side; the snapshot only
+	// carries the plate string today). Plate is already a strong hint —
+	// "USSR_Car_3" reads as "USSR civilian car #3" — so this is useful
+	// without the extra fields. Revisit when the prefab metadata is
+	// worth surfacing.
+	protected void ShowLPRHitPopup(string lockedPlate, RP_SpeedRadarLogicComponent logic)
+	{
+		string description = string.Format("Plate: %1", lockedPlate);
+		// duration 0 = use default. isSilent false = play the standard
+		// hint sound. The radar's own LPR alert is separately 3D-spatial
+		// from the prop, so the hint chime stacks with it; if that feels
+		// noisy, switch to isSilent=true.
+		SCR_HintManagerComponent.ShowCustomHint(description, "WATCHLIST HIT", 0, false);
 	}
 
 	// Fast animation tick driving the field blink during FLASHING.
