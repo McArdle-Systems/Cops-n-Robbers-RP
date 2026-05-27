@@ -1,5 +1,5 @@
 GenericWorldPPEffect : "{3AFFB0B0EC055284}Prefabs/World/DefaultWorld/GenericWorldPP_Default.et" {
- coords 581.888 -0 460.786
+ coords 581.888 0 460.786
 }
 $grp GenericEntity : "{227EB3EF8DB45BF6}Prefabs/Items/RP_ImpountLotSlot.et" {
  {
