@@ -6,7 +6,7 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_iIndex 4
    }
   }
-  coords 3240.994 5.585 2831.868
+  coords 550.994 5.585 551.868
  }
  wp_1_3 {
   components {
@@ -15,7 +15,7 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_iIndex 3
    }
   }
-  coords 3232.995 19.444 2693.697
+  coords 542.995 19.444 413.697
  }
  wp_1_2 {
   components {
@@ -24,7 +24,7 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_iIndex 2
    }
   }
-  coords 3097.213 27.468 2572.387
+  coords 407.213 27.468 292.387
  }
  wp_1_1 {
   components {
@@ -32,7 +32,7 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_eType WAYPOINT
    }
   }
-  coords 3049.676 25.519 2599.632
+  coords 359.676 25.519 319.632
  }
  wp_1_5 {
   components {
@@ -41,6 +41,6 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
     m_iIndex 5
    }
   }
-  coords 3163.408 11.595 2783.473
+  coords 473.408 11.595 503.473
  }
 }

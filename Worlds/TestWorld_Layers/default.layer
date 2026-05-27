@@ -1,5 +1,5 @@
 GenericEntity : "{47F8D83F71EB2B74}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_02/LampStreet_E_02_addon.et" {
- coords 3271.067 4.392 2885.676
+ coords 581.067 4.392 605.676
  angles 0 -125.707 0
 }
 GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
@@ -45,11 +45,11 @@ GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall
    Enabled 1
   }
  }
- coords 3270.64 3.175 2885.832
+ coords 580.64 3.175 605.832
  angles 0 -125.44 0
 }
 GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
- coords 3271.147 2 2884.765
+ coords 581.147 2 604.765
  angles 0 -123.44 0
 }
 GenericEntity : "{BE99D77D1155B127}Prefabs/Props/Military/Arsenal/ArsenalBoxes/US/ArsenalBox_US.et" {
@@ -61,9 +61,9 @@ GenericEntity : "{BE99D77D1155B127}Prefabs/Props/Military/Arsenal/ArsenalBoxes/U
    "faction affiliation" "Police"
   }
  }
- coords 3270.932 2.042 2882.374
+ coords 580.932 2.042 602.374
 }
 SCR_DestructibleBuildingEntity Police_HQ : "{C914CC910842E973}Prefabs/Structures/Services/Government/police_101.et" {
- coords 3281.939 -0.001 2881.914
+ coords 591.939 -0.001 601.914
  angles 0 54.757 0
 }
