@@ -1,14 +1,14 @@
 $grp GenericEntity {
  SpawnPoint_Police_Vehicles {
-  coords 3265.214 2 2886.185
-  angles 0 -126.445 0
+  coords 650.608 0.288 535.697
+  angles 0 -113.823 0
  }
  SpawnPoint_Police_AI {
   components {
    RP_DispatchSpawnPointComponent "{695A1AC189F8EB83}" {
    }
   }
-  coords 3268.256 2 2908.865
+  coords 646.883 0.54 558.422
   angles 0 -122.606 0
  }
 }
@@ -19,12 +19,13 @@ $grp SCR_SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et"
     m_eType CREW_SPAWN
    }
   }
-  coords 3271.365 2.499 2865.016
-  angles 0 -106.287 0
+  coords 579.51 0.523 409.688
+  angles 0 -16.414 0
   m_sFaction "CIV"
  }
  SpawnPoint_Police {
-  coords 3270.286 2 2883.794
+  coords 654.185 0.104 533.43
+  angles 0 33.788 0
   m_sFaction "Police"
  }
 }
