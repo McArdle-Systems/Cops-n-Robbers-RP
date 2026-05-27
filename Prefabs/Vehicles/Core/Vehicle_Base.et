@@ -1,0 +1,19 @@
+Vehicle {
+ ID "BBCBA43A9778AE21"
+ components {
+  ActionsManagerComponent "{C97BE5489221AE18}" {
+   additionalActions {
+    RP_ImpoundVehicleUserAction "{6966EA359CAAD10F}" {
+     ParentContextList {
+      "door_l01" "door_l02" "door_r01" "door_r02" "door_rear_hole" "hood" "hood_front"
+     }
+     UIInfo SCR_ActionUIInfo "{6966EA35812261E6}" {
+      Name "Impound Vehicle"
+      Description "Impound the vehicle at the Police impound lot"
+     }
+     m_sRequiredFactionKey "Police"
+    }
+   }
+  }
+ }
+}

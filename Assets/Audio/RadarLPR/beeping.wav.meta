@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{3A2967AF92F1AE80}Assets/Audio/beeping.wav"
+ Name "{3A2967AF92F1AE80}Assets/Audio/RadarLPR/beeping.wav"
  Configurations {
   WAVResourceClass PC : "{F72B05D02F3F135E}Configs/System/ResourceTypes/PC/Sound.conf" {
   }

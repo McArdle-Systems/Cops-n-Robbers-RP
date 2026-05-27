@@ -1,0 +1,11 @@
+GenericEntity {
+ ID "6966DEB346F1FA39"
+ components {
+  RP_ImpoundLotSlotComponent "{6966DEB369D4178B}" {
+  }
+ }
+ editor EntityEditorProps "{6966DEB29E9B40F5}" {
+ }
+ coords 3294.251 2 2874.897
+ angles 0 -125.93 0
+}

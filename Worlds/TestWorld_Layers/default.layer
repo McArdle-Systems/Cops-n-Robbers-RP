@@ -1,3 +1,79 @@
+$grp GenericEntity : "{227EB3EF8DB45BF6}Prefabs/Items/RP_ImpountLotSlot.et" {
+ {
+  coords 677.632 2 521.096
+  angles 0 -124.251 0
+ }
+ {
+  coords 679.659 2 518.146
+  angles 0 -124.251 0
+ }
+ {
+  coords 681.039 2 515.189
+  angles 0 -124.251 0
+ }
+ {
+  coords 683.466 2 511.821
+  angles 0 -124.251 0
+ }
+ {
+  coords 685.598 2 509.054
+  angles 0 -124.251 0
+ }
+}
+$grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V1.et" {
+ {
+  coords 678.375 -0.163 495.966
+  angles 0 -38.241 0
+ }
+ {
+  coords 683.070 0.021 499.791
+  angles 0 -38.241 0
+ }
+ {
+  coords 687.724 0.031 503.609
+  angles 0 -38.241 0
+ }
+ {
+  coords 692.442 0 507.543
+  angles 0 -123.41 0
+ }
+ {
+  coords 689.010 0 512.550
+  angles 0 -123.41 0
+ }
+ {
+  coords 685.572 0 517.554
+  angles 0 -123.41 0
+ }
+ {
+  coords 682.122 0 522.548
+  angles 0 -123.41 0
+ }
+ {
+  coords 678.951 0 527.091
+  angles 0 146.071 0
+ }
+ {
+  coords 671.576 0 521.935
+  angles 0 -33.9 0
+ }
+ {
+  coords 671.185 0.024 504.901
+  angles 0 -126.371 0
+ }
+ {
+  coords 667.499 -0.045 509.723
+  angles 0 -126.371 0
+ }
+ {
+  coords 663.769 -0.009 514.439
+  angles 0 52.031 0
+ }
+ {
+  coords 669.079 0 520.263
+  angles 0 -33.9 0
+ }
+}
 GenericEntity : "{47F8D83F71EB2B74}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_02/LampStreet_E_02_addon.et" {
  coords 656.089 3.917 535.222
  angles 0 -114.065 0

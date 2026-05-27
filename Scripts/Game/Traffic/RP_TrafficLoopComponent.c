@@ -109,6 +109,10 @@ class RP_TrafficActiveSpawn
 	// into RP_TrafficLoopComponent's m_mPlatesByRplId so clients can
 	// resolve it; kept here too for spawn/prune logs.
 	string m_sName;
+	// Agents observed parented to m_Vehicle at least once. ReapBailedCrew
+	// uses this to distinguish "still walking to the car" (never boarded
+	// yet, leave alone) from "boarded then bailed" (reap).
+	ref set<AIAgent> m_BoardedAgents = new set<AIAgent>();
 }
 
 [ComponentEditorProps(category: "RP/Traffic", description: "Traffic loop manager. Attach to the GameMode entity.")]
@@ -350,6 +354,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 	protected void SpawnTick()
 	{
+		ReapBailedCrew();
 		int beforePrune = m_aActiveSpawns.Count();
 		PruneDead();
 		int afterPrune = m_aActiveSpawns.Count();
@@ -389,6 +394,73 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 			entry.m_Crew = null;
 			m_aActiveSpawns.Remove(idx);
 		}
+	}
+
+	// Per-tick sweep over active spawns: any crew member who has been in
+	// the vehicle and then left is reaped on the spot. The traffic loop's
+	// contract is "keep N vehicles cycling" — wandering civilians on foot
+	// have no role, and leaving them around piles up AI that the engine
+	// then has to path-find. Once a member is reaped, SCR_AIGroup drops
+	// the agent and (when crew empties) IsEntryDead picks up naturally.
+	// The per-entry m_BoardedAgents set gates this so freshly-spawned
+	// crew still walking to the vehicle isn't killed pre-boarding.
+	// Captive / unconscious civilians are explicitly skipped — a cop in
+	// the middle of arresting someone (dragged out of the car, cuffed,
+	// or stuffed into a cop car) must not have the suspect vanish
+	// out from under them.
+	protected void ReapBailedCrew()
+	{
+		foreach (RP_TrafficActiveSpawn entry : m_aActiveSpawns)
+		{
+			if (!entry || !entry.m_Vehicle || !entry.m_Crew)
+				continue;
+			array<AIAgent> agents = {};
+			entry.m_Crew.GetAgents(agents);
+			int reaped = 0;
+			foreach (AIAgent agent : agents)
+			{
+				if (!agent)
+					continue;
+				IEntity character = agent.GetControlledEntity();
+				if (!character)
+					continue;
+				if (character.GetParent() == entry.m_Vehicle)
+				{
+					entry.m_BoardedAgents.Insert(agent);
+					continue;
+				}
+				if (!entry.m_BoardedAgents.Contains(agent))
+					continue;  // never boarded — still inbound
+				SCR_DamageManagerComponent dmg = SCR_DamageManagerComponent.Cast(character.FindComponent(SCR_DamageManagerComponent));
+				if (dmg && dmg.GetState() == EDamageState.DESTROYED)
+					continue;
+				if (IsArrestedOrDowned(character))
+					continue;  // mid-arrest / unconscious — leave for the cop
+				SCR_EntityHelper.DeleteEntityAndChildren(character);
+				reaped++;
+			}
+			if (reaped > 0)
+				Print(string.Format("[RP_Traffic] Reaped %1 bailed crew member(s) from %2.", reaped, entry.m_sName), LogLevel.NORMAL);
+		}
+	}
+
+	// True when the character is either ACE-captive (cuffed) or not in
+	// the ALIVE life state (unconscious, incapacitated, the brief
+	// downed phase before damage state flips to DESTROYED). Mirrors
+	// the cross-mod check used by RP_EmergencyYieldComponent.
+	protected bool IsArrestedOrDowned(IEntity character)
+	{
+		SCR_ChimeraCharacter chim = SCR_ChimeraCharacter.Cast(character);
+		if (!chim)
+			return false;
+		SCR_CharacterControllerComponent ctl = SCR_CharacterControllerComponent.Cast(chim.GetCharacterController());
+		if (!ctl)
+			return false;
+		if (ctl.GetLifeState() != ECharacterLifeState.ALIVE)
+			return true;
+		if (ctl.ACE_Captives_IsCaptive())
+			return true;
+		return false;
 	}
 
 	// Sweeps the RP_DriverComplianceComponent registry for civilian
@@ -571,6 +643,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 
 		string assignedName = AllocateVehicleName(crew);
 		RegisterPlate(vehicleEnt, assignedName);
+		TurnOnHeadlights(vehicleEnt);
 
 		RP_TrafficActiveSpawn entry = new RP_TrafficActiveSpawn();
 		entry.m_Vehicle = vehicleEnt;
@@ -694,6 +767,35 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		params.Transform[2] = mat[2];
 		params.Transform[3] = mat[3];
 		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
+	}
+
+	// Forces the vehicle's main headlights on right after spawn and
+	// leaves them on. Civilian AI traffic doesn't toggle lights on its
+	// own, so without this every car looks "off" — useful at night and
+	// harmless during the day. Mirrors the dispatch headlight-toggle
+	// pattern (SCR_LightsPresenceUserAction.PerformAction). User param
+	// is the vehicle itself since the crew hasn't boarded yet; the
+	// action doesn't validate the user for this toggle.
+	protected void TurnOnHeadlights(IEntity vehicle)
+	{
+		if (!vehicle)
+			return;
+		BaseActionsManagerComponent actionMgr = BaseActionsManagerComponent.Cast(vehicle.FindComponent(BaseActionsManagerComponent));
+		if (!actionMgr)
+			return;
+		array<BaseUserAction> actions = {};
+		actionMgr.GetActionsList(actions);
+		foreach (BaseUserAction a : actions)
+		{
+			SCR_LightsPresenceUserAction headlights = SCR_LightsPresenceUserAction.Cast(a);
+			if (!headlights)
+				continue;
+			string actionName = a.GetActionName();
+			if (actionName.Contains("_State_Off"))
+				return;  // already on
+			headlights.PerformAction(vehicle, vehicle);
+			return;
+		}
 	}
 
 	protected AIWaypoint SpawnWaypoint(ResourceName prefab, vector pos)
