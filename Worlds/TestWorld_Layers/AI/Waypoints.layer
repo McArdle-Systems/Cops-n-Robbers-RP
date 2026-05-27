@@ -3,7 +3,7 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
   components {
    RP_TrafficMarkerComponent "{694E1EF6F1B1FD9F}" {
     m_eType WAYPOINT
-    m_iIndex 3
+    m_iIndex 2
    }
   }
   coords 470.286 0.14 453.146
@@ -12,17 +12,53 @@ $grp SCR_AIWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et
   components {
    RP_TrafficMarkerComponent "{694E1EF60DD170BA}" {
     m_eType WAYPOINT
-    m_iIndex 2
+    m_iIndex 5
    }
   }
-  coords 537.651 1.211 575.366
+  coords 457.704 1.211 657.654
  }
  wp_1_1 {
   components {
    RP_TrafficMarkerComponent "{694E1EF60182008F}" {
     m_eType WAYPOINT
+    m_iIndex 3
    }
   }
-  coords 622.814 -0.025 476.764
+  coords 972.452 6.745 530.887
+ }
+ wp_1_4 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60182008F}" {
+    m_eType WAYPOINT
+    m_iIndex 4
+   }
+  }
+  coords 802.901 0 908.161
+ }
+ wp_1_5 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60DD170BA}" {
+    m_eType WAYPOINT
+    m_iIndex 6
+   }
+  }
+  coords 874.35 0 671.85
+ }
+ wp_1_6 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60DD170BA}" {
+    m_eType WAYPOINT
+    m_iIndex 7
+   }
+  }
+  coords 767.938 0 414.154
+ }
+ wp_1_7 {
+  components {
+   RP_TrafficMarkerComponent "{694E1EF60DD170BA}" {
+    m_eType WAYPOINT
+   }
+  }
+  coords 550.667 0 573.075
  }
 }
