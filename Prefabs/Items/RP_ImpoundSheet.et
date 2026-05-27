@@ -1,0 +1,8 @@
+GameEntity : "{35D7F1189BE00E94}Prefabs/Items/Equipment/BallisticTable/BallisticTable_base.et" {
+ ID "508AB2013EEE1E00"
+ components {
+  RP_ImpoundToolComponent "{6966EA35E43B8382}" {
+  }
+ }
+ coords 3263.806 2.212 2882.957
+}

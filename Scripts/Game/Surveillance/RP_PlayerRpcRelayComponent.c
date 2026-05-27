@@ -176,6 +176,60 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 	}
 
 	// ----------------------------------------------------------------------
+	// Public entry: impound vehicle
+	// ----------------------------------------------------------------------
+	//
+	// ScriptedUserAction.PerformAction on a vehicle's ActionsManagerComponent
+	// runs on the client of whichever player last drove / is driving the
+	// vehicle — not on the server. The cop spawn pad gets away with calling
+	// a server-gated method directly because that action lives on a static
+	// prop with no controller, so the engine routes it server-side. For the
+	// impound action (owner = vehicle) we have to bridge to the server
+	// ourselves; this relay sits on the cop character (client-owned) so
+	// RplRcver.Server actually arrives.
+
+	void RequestImpound(IEntity vehicle)
+	{
+		if (!vehicle)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyImpound(vehicle, GetOwner());
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(vehicle.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestImpound: vehicle %1 has no RplComponent — RPC skipped.", vehicle), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_Impound, rpl.Id());
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_Impound(RplId vehicleId)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_Impound: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyImpound(rpl.GetEntity(), GetOwner());
+	}
+
+	protected void ApplyImpound(IEntity vehicle, IEntity policePlayer)
+	{
+		RP_ImpoundManagerComponent mgr = RP_ImpoundManagerComponent.GetInstance();
+		if (!mgr)
+		{
+			Print("[RP_RpcRelay] ApplyImpound: impound manager not available.", LogLevel.WARNING);
+			return;
+		}
+		mgr.Impound(vehicle, policePlayer);
+	}
+
+	// ----------------------------------------------------------------------
 	// Public entry: dispatch request
 	// ----------------------------------------------------------------------
 
