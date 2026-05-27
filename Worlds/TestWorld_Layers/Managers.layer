@@ -23,6 +23,24 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
   }
  }
  coords 579.56 0 620.382
+ Formations {
+  AIFormationDefinition "{6976491C8FE5CAED}" {
+   Name "Blob"
+   Offsets {
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+    0 0 0
+   }
+  }
+ }
 }
 SCR_CameraManager CameraManager : "{33F9FD881E3700CC}Prefabs/World/Game/SCR_CameraManager.et" {
  coords 580 0 600
@@ -88,6 +106,9 @@ SCR_BaseGameMode GameMode : "{9732FEC6934145B0}Prefabs/MP/Modes/TeamDeathmatch/R
    m_fLifetimeSec 0
    m_sLightPrefab "{A4FE19D3B7C42501}Prefabs/Effects/Lights/RP_HighlightLight.et"
    m_vLightOffset 0 2.952 0
+  }
+  SCR_GroupsManagerComponent "{5706EC99934496F5}" {
+   m_sDefaultGroupPrefab "{8B4D49A9F324E7D6}Prefabs/Groups/PlayableGroup.et"
   }
  }
  coords 3262.28 2.233 2876.784
