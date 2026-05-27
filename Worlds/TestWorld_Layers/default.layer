@@ -1,77 +1,88 @@
+GenericWorldPPEffect : "{3AFFB0B0EC055284}Prefabs/World/DefaultWorld/GenericWorldPP_Default.et" {
+ coords 581.888 -0 460.786
+}
 $grp GenericEntity : "{227EB3EF8DB45BF6}Prefabs/Items/RP_ImpountLotSlot.et" {
  {
-  coords 677.632 2 521.096
+  coords 672.256 2 504.473
   angles 0 -124.251 0
  }
  {
-  coords 679.659 2 518.146
+  coords 674.283 2 501.523
   angles 0 -124.251 0
  }
  {
-  coords 681.039 2 515.189
+  coords 675.663 2 498.566
   angles 0 -124.251 0
  }
  {
-  coords 683.466 2 511.821
+  coords 678.09 2 495.198
   angles 0 -124.251 0
  }
  {
-  coords 685.598 2 509.054
+  coords 680.222 2 492.431
   angles 0 -124.251 0
  }
 }
 $grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V1.et" {
  {
-  coords 678.375 -0.163 495.966
+  coords 672.999 -0.163 479.343
   angles 0 -38.241 0
  }
  {
-  coords 683.070 0.021 499.791
+  coords 677.694 0.021 483.168
   angles 0 -38.241 0
  }
  {
-  coords 687.724 0.031 503.609
+  coords 682.348 0.031 486.986
   angles 0 -38.241 0
  }
  {
-  coords 692.442 0 507.543
+  coords 687.066 0 490.92
   angles 0 -123.41 0
  }
  {
-  coords 689.010 0 512.550
+  coords 683.634 0 495.927
   angles 0 -123.41 0
  }
  {
-  coords 685.572 0 517.554
+  coords 680.196 0 500.931
   angles 0 -123.41 0
  }
  {
-  coords 682.122 0 522.548
+  coords 676.746 0 505.925
   angles 0 -123.41 0
  }
  {
-  coords 678.951 0 527.091
+  coords 673.575 0 510.468
   angles 0 146.071 0
  }
  {
-  coords 671.576 0 521.935
+  coords 666.2 0 505.312
   angles 0 -33.9 0
  }
  {
-  coords 671.185 0.024 504.901
+  coords 665.809 0.024 488.278
   angles 0 -126.371 0
  }
  {
-  coords 667.499 -0.045 509.723
+  coords 662.123 -0.045 493.1
   angles 0 -126.371 0
  }
  {
-  coords 663.769 -0.009 514.439
+  coords 658.393 -0.009 497.816
   angles 0 52.031 0
  }
  {
-  coords 669.079 0 520.263
+  coords 663.703 0 503.64
   angles 0 -33.9 0
+ }
+ {
+  coords 669.53 0 483.484
+  angles 0 -127.294 0
+ }
+ {
+  coords 673.015 0 479.407
+  angles 0 -129.486 0
  }
 }
 GenericEntity : "{47F8D83F71EB2B74}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_02/LampStreet_E_02_addon.et" {
@@ -199,7 +210,7 @@ GenericEntity : "{BE99D77D1155B127}Prefabs/Props/Military/Arsenal/ArsenalBoxes/U
    {
     GenericEntity {
      ID "56B6871A278AB642"
-     coords 0 0 -0
+     coords 0 0 0
     }
    }
   }
@@ -220,7 +231,7 @@ GenericEntity : "{BE99D77D1155B127}Prefabs/Props/Military/Arsenal/ArsenalBoxes/U
    {
     DecalEntity {
      ID "56DEFDB4A2C87F38"
-     coords 0 0 -0
+     coords 0 0 0
      angles -89.972 0 0
     }
    }
