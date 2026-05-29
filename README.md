@@ -245,6 +245,9 @@ UI/                             Dispatch popup .layout
 Missions/                       Mission scaffolding
 Worlds/                         TestWorld (CustomWorld_Base terrain) +
                                 committed navmesh tile cache
+Tools/                          Blender/Python asset generators
+                                (radar mesh, RT plane, speed textures,
+                                lush satmap)
 docs/                           Design notes, phase notes, audio
                                 task list
 ```
