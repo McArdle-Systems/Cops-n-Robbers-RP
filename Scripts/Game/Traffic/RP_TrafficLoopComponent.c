@@ -149,6 +149,9 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "4.0", desc: "Offset distance when searching for an unblocked spawn position around the CREW_SPAWN marker.")]
 	protected float m_fOffsetSearchDistance;
 
+	[Attribute(defvalue: "4.0", desc: "Lateral offset (m) for the crew spawn, along the spawn point's right axis, so the AI does NOT materialize inside the just-spawned vehicle's collision (which launches/crushes them on spawn). The GetIn waypoint then walks the crew in to board.")]
+	protected float m_fCrewSpawnLateralOffset;
+
 	[Attribute(defvalue: "300.0", desc: "Seconds between orphan-crew sweeps. Safety net for civilian AI groups that lost their vehicle without going through PruneDead (pre-fix accumulation, engine GarbageSystem races). Per-pass cost is tiny (~one set-lookup per active group), so this can run as fast or slow as you want — default 5 min is more than enough.")]
 	protected float m_fOrphanReapIntervalSeconds;
 
@@ -606,7 +609,19 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 			return;
 		}
 
-		IEntity crewEnt = SpawnEntityAtTransform(cfg.m_sGroupPrefab, spawnTm);
+		// Spawn the crew beside the vehicle, not on top of it. Materializing
+		// a character inside the just-spawned vehicle's collision launches /
+		// crushes it ("the car crushed the driver on spawn"). Offset laterally
+		// along the spawn transform's right axis; the GetIn waypoint below then
+		// walks them in to board normally. Vehicle stays at spawnPos so it sits
+		// correctly on the road/cycle start.
+		vector crewTm[4];
+		crewTm[0] = spawnTm[0];
+		crewTm[1] = spawnTm[1];
+		crewTm[2] = spawnTm[2];
+		crewTm[3] = spawnPos + spawnTm[0] * m_fCrewSpawnLateralOffset;
+
+		IEntity crewEnt = SpawnEntityAtTransform(cfg.m_sGroupPrefab, crewTm);
 		SCR_AIGroup crew = SCR_AIGroup.Cast(crewEnt);
 		if (!crew)
 		{
