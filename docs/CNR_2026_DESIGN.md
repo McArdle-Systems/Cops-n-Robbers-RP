@@ -34,6 +34,11 @@ Booking** lifecycle on top of the existing dispatch system.
     via `SPEEDING` and `WATCHLIST` badges, and an LPR hit also pops
     a `SCR_HintManagerComponent.ShowCustomHint` with the plate for
     the local cop driver.
+  - Vehicle impound — Impound Sheet gadget + per-vehicle action
+    teleports a car into a server-authoritative FIFO impound lot with
+    slot recycling (driven-off cars freed, wrecks cleared, oldest
+    evicted when full). *(Shipped, PR #22.)* See
+    `RP_Impound*Component` / `RP_ImpoundVehicleUserAction`.
   - Jail hold + automated release at end of timer. *(Still planned.)*
   - In-game chat — history panel + channels enabled (fix landed via
     `ScriptedChatEntity` placement; see `CHAT_HUD_INVESTIGATION.md`).
