@@ -98,7 +98,7 @@ SCR_BaseGameMode GameMode : "{9732FEC6934145B0}Prefabs/MP/Modes/TeamDeathmatch/R
      m_sVehiclePrefab "{DCAF0585D17B917A}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_tanker_CIV_randomized.et"
     }
    }
-   m_iTargetActiveCount 10
+   m_iTargetActiveCount 20
    m_fSpawnIntervalSeconds 3
    m_sCycleWaypointPrefab "{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et"
   }

@@ -19,8 +19,8 @@ $grp SCR_SpawnPoint : "{E7F4D5562F48DDE4}Prefabs/MP/Spawning/SpawnPoint_Base.et"
     m_eType CREW_SPAWN
    }
   }
-  coords 579.51 0.523 409.688
-  angles 0 -16.414 0
+  coords 584.722 0.523 360.248
+  angles 0 -3.281 0
   m_sFaction "CIV"
  }
  SpawnPoint_Police {

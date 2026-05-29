@@ -150,7 +150,7 @@ GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall
  angles 0 -113.798 0
 }
 StaticModelEntity : "{6C98E4E8DE0A7F79}Prefabs/Vegetation/Plant/Clutter_base.et" {
- coords 882.362 -0 673.859
+ coords 904.055 0 658.114
 }
 GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
  coords 655.984 -0.06 534.313
