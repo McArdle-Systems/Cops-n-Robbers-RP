@@ -126,6 +126,28 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
     SCR_EntityCatalog "{69604ABE79EF7B35}" {
      m_eEntityCatalogType ITEM
      m_aEntityEntryList {
+      SCR_EntityCatalogEntry "{8C0F3E1200001002}" {
+       m_sEntityPrefab "{76AE6FA17CE23F32}Prefabs/Weapons/ECW Tasers/Green Taser 7/T7Prefab/ECW_T7Green_base.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001102}" {
+         m_eItemType PISTOL
+         m_eItemMode WEAPON
+         m_iSupplyCost 0
+         m_ItemResourceName "{76AE6FA17CE23F32}Prefabs/Weapons/ECW Tasers/Green Taser 7/T7Prefab/ECW_T7Green_base.et"
+        }
+       }
+      }
+      SCR_EntityCatalogEntry "{8C0F3E1200001004}" {
+       m_sEntityPrefab "{9C05543A503DB80F}Prefabs/Weapons/Magazines/Magazine_Taser.et"
+       m_aEntityDataList {
+        SCR_ArsenalItemStandalone "{8C0F3E1200001104}" {
+         m_eItemType PISTOL
+         m_eItemMode AMMUNITION
+         m_iSupplyCost 0
+         m_ItemResourceName "{9C05543A503DB80F}Prefabs/Weapons/Magazines/Magazine_Taser.et"
+        }
+       }
+      }
       SCR_EntityCatalogEntry "{8C0F3E1200001005}" {
        m_sEntityPrefab "{CBF9B9942E07B6B8}Prefabs/Items/Equipment/Accessories/ZipCuffs/ACE_Captives_ZipCuffs.et"
        m_aEntityDataList {
