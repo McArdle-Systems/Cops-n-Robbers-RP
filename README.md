@@ -56,12 +56,12 @@ What's left in Phase 2:
 when LPR/radar don't trigger.
 
 **World / mission infra (ongoing).** The mission moved off an Arland
-SubScene onto a standalone **CustomWorld_Base** terrain (PRs #20, #21,
+SubScene onto a standalone **CustomWorld_Base** terrain (PRs #21, #23,
 #24), with `SCR_AIWorld` relocated cnr-side and navmesh re-baked
 against the new terrain. A custom **PlayableGroup** prefab + BLOB
 formation and player-join / traffic-loop tweaks landed alongside
-(PRs #25, #27). A lush forest-floor satmap + its Python generator
-landed in PR #26.
+(PR #25). A lush forest-floor satmap + its Python generator landed in
+PR #26.
 
 Earlier phase status: see [docs/PHASE_0A_NOTES.md](docs/PHASE_0A_NOTES.md)
 for the AI-movement POC that came before Phase 1.
