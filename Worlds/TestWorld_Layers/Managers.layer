@@ -126,45 +126,25 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
     SCR_EntityCatalog "{69604ABE79EF7B35}" {
      m_eEntityCatalogType ITEM
      m_aEntityEntryList {
-      SCR_EntityCatalogEntry "{8C0F3E1200001001}" {
-       m_sEntityPrefab "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
-       m_aEntityDataList {
-        SCR_ArsenalItemStandalone "{8C0F3E1200001101}" {
-         m_eItemMode WEAPON
-         m_iSupplyCost 0
-         m_ItemResourceName "{A1EEB1D521BB814F}Prefabs/Weapons/Shotguns/Remington 870/BC_Shotgun_Remington_870_GREEN.et"
-        }
-       }
-      }
       SCR_EntityCatalogEntry "{8C0F3E1200001002}" {
-       m_sEntityPrefab "{E245F7E9B1EA660B}Prefabs/Weapons/Handguns/M9/Handgun_Taser.et"
+       m_sEntityPrefab "{76AE6FA17CE23F32}Prefabs/Weapons/ECW Tasers/Green Taser 7/T7Prefab/ECW_T7Green_base.et"
        m_aEntityDataList {
         SCR_ArsenalItemStandalone "{8C0F3E1200001102}" {
          m_eItemType PISTOL
          m_eItemMode WEAPON
          m_iSupplyCost 0
-         m_ItemResourceName "{E245F7E9B1EA660B}Prefabs/Weapons/Handguns/M9/Handgun_Taser.et"
-        }
-       }
-      }
-      SCR_EntityCatalogEntry "{8C0F3E1200001003}" {
-       m_sEntityPrefab "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et"
-       m_aEntityDataList {
-        SCR_ArsenalItemStandalone "{8C0F3E1200001103}" {
-         m_eItemMode AMMUNITION
-         m_iSupplyCost 0
-         m_ItemResourceName "{BFC709AB11127577}Prefabs/Weapons/Magazines/BC_Shell_12ga_Beanbag.et"
+         m_ItemResourceName "{76AE6FA17CE23F32}Prefabs/Weapons/ECW Tasers/Green Taser 7/T7Prefab/ECW_T7Green_base.et"
         }
        }
       }
       SCR_EntityCatalogEntry "{8C0F3E1200001004}" {
-       m_sEntityPrefab "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et"
+       m_sEntityPrefab "{9C05543A503DB80F}Prefabs/Weapons/Magazines/Magazine_Taser.et"
        m_aEntityDataList {
         SCR_ArsenalItemStandalone "{8C0F3E1200001104}" {
          m_eItemType PISTOL
          m_eItemMode AMMUNITION
          m_iSupplyCost 0
-         m_ItemResourceName "{9ED0F123B1E9C98A}Prefabs/Weapons/Magazines/magazine_taser_cartridge.et"
+         m_ItemResourceName "{9C05543A503DB80F}Prefabs/Weapons/Magazines/Magazine_Taser.et"
         }
        }
       }
@@ -242,17 +222,6 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
          m_eItemMode ATTACHMENT
          m_iSupplyCost 0
          m_ItemResourceName "{9EFCF1035423B5E3}Cop/ShirtCop.et"
-        }
-       }
-      }
-      SCR_EntityCatalogEntry "{8C0F3E120000100C}" {
-       m_sEntityPrefab "{2CA92E210658D49A}Prefabs/Weapons/Magazines/Internal Mags (Do not use)/Internal_mag_Buckshot_m870_LL.et"
-       m_aEntityDataList {
-        SCR_ArsenalItemStandalone "{8C0F3E120000110C}" {
-         m_eItemType MORTARS
-         m_eItemMode PYLON
-         m_iSupplyCost 0
-         m_ItemResourceName "{2CA92E210658D49A}Prefabs/Weapons/Magazines/Internal Mags (Do not use)/Internal_mag_Buckshot_m870_LL.et"
         }
        }
       }
@@ -405,17 +374,6 @@ SCR_FactionManager FactionManager : "{A242612865F2A48E}Prefabs/MP/Managers/Facti
          m_eItemMode DEFAULT
          m_iSupplyCost 0
          m_ItemResourceName "{6676FF9B716402CC}Prefabs/Items/PersonalBelongings/PersonalBelongings_US.et"
-        }
-       }
-      }
-      SCR_EntityCatalogEntry "{8C0F3E120000101C}" {
-       m_sEntityPrefab "{7EFA6626171FBAAD}Prefabs/Weapons/Ammo/Ammo_12ga_buckshot_12_in_barrel_beanbag.et"
-       m_aEntityDataList {
-        SCR_ArsenalItemStandalone "{8C0F3E120000111C}" {
-         m_eItemType MORTARS
-         m_eItemMode PYLON
-         m_iSupplyCost 0
-         m_ItemResourceName "{7EFA6626171FBAAD}Prefabs/Weapons/Ammo/Ammo_12ga_buckshot_12_in_barrel_beanbag.et"
         }
        }
       }

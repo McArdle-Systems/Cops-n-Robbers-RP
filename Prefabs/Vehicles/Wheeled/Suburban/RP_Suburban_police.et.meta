@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{712FF9D92734DE69}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.et"
+ Name "{79064B62EDA11265}Prefabs/Vehicles/Wheeled/Suburban/RP_Suburban_police.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }
