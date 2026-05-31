@@ -115,6 +115,19 @@ class RP_TrafficActiveSpawn
 	ref set<AIAgent> m_BoardedAgents = new set<AIAgent>();
 }
 
+// A traffic vehicle whose crew has been reaped but whose (intact or
+// wreck) entity was left in the world. The orphan-vehicle reaper deletes
+// it once it has sat past the age threshold AND no player is nearby —
+// the safety net that keeps a stranded car from blocking the spawn pool
+// indefinitely.
+class RP_OrphanedVehicle
+{
+	IEntity m_Vehicle;
+	// World time (seconds) the vehicle became driverless. Compared against
+	// the reap-age threshold in ReapOrphanVehicles.
+	float m_fOrphanedAtTime;
+}
+
 [ComponentEditorProps(category: "RP/Traffic", description: "Traffic loop manager. Attach to the GameMode entity.")]
 class RP_TrafficLoopComponentClass : SCR_BaseGameModeComponentClass
 {
@@ -155,6 +168,15 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "300.0", desc: "Seconds between orphan-crew sweeps. Safety net for civilian AI groups that lost their vehicle without going through PruneDead (pre-fix accumulation, engine GarbageSystem races). Per-pass cost is tiny (~one set-lookup per active group), so this can run as fast or slow as you want — default 5 min is more than enough.")]
 	protected float m_fOrphanReapIntervalSeconds;
 
+	[Attribute(defvalue: "30.0", desc: "Minutes a driverless traffic vehicle (crew reaped, vehicle left behind by PruneDead) may sit before the orphan-vehicle reaper deletes it. Safety net so a stranded car — e.g. one left on or near the spawn point — can't block the pool forever. Set 0 to disable.")]
+	protected float m_fOrphanVehicleReapMinutes;
+
+	[Attribute(defvalue: "60.0", desc: "Don't reap an orphaned vehicle while a player is within this many meters — avoids a car vanishing in front of someone. The reaper waits until the area is clear.")]
+	protected float m_fOrphanVehiclePlayerSafeRadius;
+
+	[Attribute(defvalue: "60.0", desc: "Seconds between orphan-vehicle reaper passes. Cheap — bounded by the number of driverless traffic cars in the world.")]
+	protected float m_fOrphanVehicleReapCheckSeconds;
+
 	protected static RP_TrafficLoopComponent s_Instance;
 	protected IEntity m_CrewSpawnMarker;
 	protected vector m_aCrewSpawnRot[4];
@@ -167,6 +189,11 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	// Active pool. Pruned each tick; new spawns added to keep up with
 	// m_iTargetActiveCount.
 	protected ref array<ref RP_TrafficActiveSpawn> m_aActiveSpawns = new array<ref RP_TrafficActiveSpawn>();
+
+	// Driverless vehicles PruneDead left in the world, tracked for the
+	// time-based orphan-vehicle reaper. Entries drop when the vehicle is
+	// reaped (age + no player nearby) or has already vanished.
+	protected ref array<ref RP_OrphanedVehicle> m_aOrphanedVehicles = new array<ref RP_OrphanedVehicle>();
 	protected int m_iNextConfigIndex;
 	protected bool m_bStarted;
 
@@ -187,6 +214,14 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	// uses a free-function-style callback, not a closure, so we set a
 	// flag and read it after the call).
 	protected bool m_bClearCheck_Blocked;
+
+	// Consecutive SpawnTick attempts that found the spawn area blocked.
+	// Throttles the "deferring" log so a permanently-blocked spawn point
+	// (parked/persisted vehicle on the spot) logs once at onset and then
+	// only every DEFER_LOG_THROTTLE cycles, instead of every interval
+	// forever. Reset to 0 the moment a clear spot is found.
+	protected int m_iConsecutiveDefers;
+	protected const int DEFER_LOG_THROTTLE = 15;
 
 	static RP_TrafficLoopComponent GetInstance() { return s_Instance; }
 
@@ -272,6 +307,7 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	{
 		GetGame().GetCallqueue().Remove(SpawnTick);
 		GetGame().GetCallqueue().Remove(ReapOrphanCrews);
+		GetGame().GetCallqueue().Remove(ReapOrphanVehicles);
 		if (s_Instance == this)
 			s_Instance = null;
 		super.OnDelete(owner);
@@ -353,6 +389,12 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		int reapMs = (int)(m_fOrphanReapIntervalSeconds * 1000);
 		if (reapMs > 0)
 			GetGame().GetCallqueue().CallLater(ReapOrphanCrews, reapMs, true);
+
+		// Time-based reaper for driverless vehicles PruneDead leaves behind.
+		// Gated on a non-zero age threshold so it can be disabled entirely.
+		int orphanVehMs = (int)(m_fOrphanVehicleReapCheckSeconds * 1000);
+		if (orphanVehMs > 0 && m_fOrphanVehicleReapMinutes > 0)
+			GetGame().GetCallqueue().CallLater(ReapOrphanVehicles, orphanVehMs, true);
 	}
 
 	protected void SpawnTick()
@@ -394,6 +436,10 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 			RP_TrafficActiveSpawn entry = m_aActiveSpawns[idx];
 			int killed = ReapCrewLiveAgents(entry.m_Crew);
 			Print(string.Format("[RP_Traffic] Pruning dead entry %1 (vehicle=%2 crew=%3, orphans killed=%4).", entry.m_sName, entry.m_Vehicle, entry.m_Crew, killed), LogLevel.NORMAL);
+			// The vehicle entity is intentionally left in the world (scenery
+			// for cleanup gameplay). Hand it to the time-based reaper so a
+			// stranded car can't sit forever — e.g. on the spawn point.
+			TrackOrphanVehicle(entry.m_Vehicle);
 			entry.m_Crew = null;
 			m_aActiveSpawns.Remove(idx);
 		}
@@ -514,6 +560,103 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		Print(string.Format("[RP_Traffic] Reaped %1 orphan crew group(s), %2 live AI deleted.", toReap.Count(), totalKilled), LogLevel.NORMAL);
 	}
 
+	// Registers a driverless vehicle PruneDead left behind so the
+	// time-based reaper can clean it up later. No-op for a null vehicle
+	// or one already tracked (PruneDead only fires once per entry, but be
+	// defensive). Disabled paths (threshold 0) still track harmlessly —
+	// ReapOrphanVehicles is just never scheduled, so the list idles.
+	protected void TrackOrphanVehicle(IEntity vehicle)
+	{
+		if (!vehicle)
+			return;
+		foreach (RP_OrphanedVehicle existing : m_aOrphanedVehicles)
+		{
+			if (existing && existing.m_Vehicle == vehicle)
+				return;
+		}
+		RP_OrphanedVehicle orphan = new RP_OrphanedVehicle();
+		orphan.m_Vehicle = vehicle;
+		orphan.m_fOrphanedAtTime = GetWorldTimeSeconds();
+		m_aOrphanedVehicles.Insert(orphan);
+	}
+
+	// Periodic sweep: deletes any tracked orphan vehicle that has sat past
+	// the age threshold, provided no player is within the safe radius (so
+	// cars don't pop out in front of anyone). Stale entries whose vehicle
+	// already vanished (despawned by other means, garbage-collected) are
+	// dropped without a delete.
+	protected void ReapOrphanVehicles()
+	{
+		if (m_aOrphanedVehicles.IsEmpty())
+			return;
+		float now = GetWorldTimeSeconds();
+		float maxAgeSeconds = m_fOrphanVehicleReapMinutes * 60.0;
+		array<int> toRemove = {};
+		for (int i = 0; i < m_aOrphanedVehicles.Count(); i++)
+		{
+			RP_OrphanedVehicle orphan = m_aOrphanedVehicles[i];
+			if (!orphan || !orphan.m_Vehicle)
+			{
+				toRemove.Insert(i);
+				continue;
+			}
+			if (now - orphan.m_fOrphanedAtTime < maxAgeSeconds)
+				continue;
+			if (IsPlayerNear(orphan.m_Vehicle.GetOrigin(), m_fOrphanVehiclePlayerSafeRadius))
+				continue;  // wait until the area is clear
+			Print(string.Format("[RP_Traffic] Reaping orphaned traffic vehicle %1 (idle %2 min, no player within %3m).", orphan.m_Vehicle, Math.Round((now - orphan.m_fOrphanedAtTime) / 60.0), m_fOrphanVehiclePlayerSafeRadius), LogLevel.NORMAL);
+			SCR_EntityHelper.DeleteEntityAndChildren(orphan.m_Vehicle);
+			orphan.m_Vehicle = null;
+			toRemove.Insert(i);
+		}
+		for (int j = toRemove.Count() - 1; j >= 0; j--)
+			m_aOrphanedVehicles.Remove(toRemove[j]);
+	}
+
+	// True if any player-controlled entity is within radius of pos. Used
+	// to defer orphan-vehicle reaps so a car never disappears in plain
+	// view of a player.
+	protected bool IsPlayerNear(vector pos, float radius)
+	{
+		PlayerManager pm = GetGame().GetPlayerManager();
+		if (!pm)
+			return false;
+		array<int> playerIds = {};
+		pm.GetPlayers(playerIds);
+		float radiusSq = radius * radius;
+		foreach (int id : playerIds)
+		{
+			IEntity controlled = pm.GetPlayerControlledEntity(id);
+			if (!controlled)
+				continue;
+			if (vector.DistanceSq(controlled.GetOrigin(), pos) <= radiusSq)
+				return true;
+		}
+		return false;
+	}
+
+	protected float GetWorldTimeSeconds()
+	{
+		BaseWorld world = GetGame().GetWorld();
+		if (!world)
+			return 0;
+		return world.GetWorldTime() / 1000.0;
+	}
+
+	// Tells the engine savegame to stop tracking (and to release any
+	// already-persisted data for) a traffic-spawned entity. Guarded so it
+	// is a harmless no-op when no persistence system is active — the
+	// workbench and save-less servers return null from GetInstance().
+	protected void ExcludeFromPersistence(IEntity entity)
+	{
+		if (!entity)
+			return;
+		PersistenceSystem persistence = PersistenceSystem.GetInstance();
+		if (!persistence)
+			return;
+		persistence.StopTracking(entity);
+	}
+
 	// Deletes character entities for any AI agent in the group whose
 	// controlled character is still alive, then deletes the
 	// SCR_AIGroup container. Corpses (DESTROYED damage state) are left
@@ -576,9 +719,16 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		vector spawnPos;
 		if (!TryFindClearSpawnPos(m_vCrewSpawnPosition, spawnPos))
 		{
-			Print(string.Format("[RP_Traffic] Spawn area around %1 is blocked, deferring to next tick.", m_vCrewSpawnPosition), LogLevel.NORMAL);
+			m_iConsecutiveDefers++;
+			// Log once at onset, then a louder summary every throttle window
+			// — a permanent blocker otherwise repeats this every interval.
+			if (m_iConsecutiveDefers == 1)
+				Print(string.Format("[RP_Traffic] Spawn area around %1 is blocked, deferring to next tick.", m_vCrewSpawnPosition), LogLevel.NORMAL);
+			else if (m_iConsecutiveDefers % DEFER_LOG_THROTTLE == 0)
+				Print(string.Format("[RP_Traffic] Spawn area around %1 still blocked after %2 cycles — pool stuck below target. Check for an obstruction (parked/persisted vehicle) on the spawn point.", m_vCrewSpawnPosition, m_iConsecutiveDefers), LogLevel.WARNING);
 			return;
 		}
+		m_iConsecutiveDefers = 0;
 
 		// Round-robin through configs.
 		RP_TrafficSpawnConfig cfg = m_aSpawnConfigs[m_iNextConfigIndex];
@@ -629,6 +779,17 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 			SCR_EntityHelper.DeleteEntityAndChildren(vehicleEnt);
 			return;
 		}
+
+		// Keep traffic vehicles and crews out of the engine savegame.
+		// A driverless car captured by an autosave otherwise reloads as a
+		// static obstacle on the next server start — potentially on the
+		// spawn point, blocking the whole pool. StopTracking also releases
+		// any data already saved for these instances on the next save, so
+		// phantom cars persisted by earlier sessions clean themselves up.
+		// No-op where persistence isn't running (workbench, or a server
+		// with no save system) — GetInstance() returns null there.
+		ExcludeFromPersistence(vehicleEnt);
+		ExcludeFromPersistence(crewEnt);
 
 		AIWaypoint getIn = SpawnWaypoint(m_sGetInWaypointPrefab, vehicleEnt.GetOrigin());
 		if (getIn)

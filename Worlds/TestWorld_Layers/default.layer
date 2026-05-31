@@ -108,7 +108,7 @@ GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall
   RP_CopVehicleSpawnerComponent "{69562DEC1EDEDEA4}" {
    m_aVehiclePrefabs {
     RP_CopVehicleEntry "{69562DEC1D871A2B}" {
-     m_sPrefab "{79064B62EDA11265}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police_inher.et"
+     m_sPrefab "{79064B62EDA11265}Prefabs/Vehicles/Wheeled/Suburban/RP_Suburban_police.et"
      m_sDisplayName "Suburban (Police)"
     }
    }

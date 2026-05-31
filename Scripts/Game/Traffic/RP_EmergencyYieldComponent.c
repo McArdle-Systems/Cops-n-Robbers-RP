@@ -62,6 +62,11 @@ class RP_YieldedGroupState
 	// already contains its own boarding/drive waypoints) sends them
 	// running back to the wheel while cuffed.
 	bool m_bArrestSilent;
+	// Set true when the driver bailed AGAIN within the recovery cooldown.
+	// EndYield then takes the same drop-the-cycle / no-GetIn path as the
+	// arrest case: we stop fighting the bail loop and leave the orphaned
+	// crew member for the traffic system's ReapBailedCrew/PruneDead.
+	bool m_bRepeatBailGiveUp;
 }
 
 [ComponentEditorProps(category: "RP/Traffic", description: "Server-side yield-to-emergency-vehicle manager. Attach to the GameMode entity.")]
@@ -92,6 +97,9 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 	[Attribute(defvalue: "0.75", desc: "Yield releases if the bubble scan hasn't refreshed it for this many seconds. ~3 ticks at the default 0.25s interval — covers cop driving past, killing the lights, or being deleted in a single mechanism.")]
 	protected float m_fStaleReleaseSeconds;
 
+	[Attribute(defvalue: "3.0", desc: "Bail-recovery debounce window in seconds. If a group's driver bails, gets a GetIn recovery, re-boards, re-yields, and bails AGAIN within this window, the manager stops prepending GetIn and releases the yield for the traffic reap to clean up. Prevents the bail→GetIn→re-bail spin at bad pull-over geometry.")]
+	protected float m_fBailRecoveryCooldownSeconds;
+
 	[Attribute(defvalue: "1", desc: "Right-hand traffic (Reforger vanilla — Everon, Arland). When true, the pull-over goal is biased forward + right; flip to false for left-hand-drive maps. The script API doesn't expose a per-world traffic-side flag, so this is a manual toggle.")]
 	protected bool m_bRightHandTraffic;
 
@@ -103,6 +111,12 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 	protected ref set<IEntity> m_sDiagnosedFailures = new set<IEntity>();
 	// Active yields — keyed by the SCR_AIGroup currently held in place.
 	protected ref map<SCR_AIGroup, ref RP_YieldedGroupState> m_mYieldedGroups = new map<SCR_AIGroup, ref RP_YieldedGroupState>();
+	// Last world-time (seconds) we ran a GetIn bail-recovery for a group.
+	// Survives across yield episodes (a recovery destroys the yield state,
+	// re-boarding starts a fresh yield) so CheckReleases can tell a single
+	// bail from a bail→recover→re-bail spin. Cleared when a yield ends
+	// cleanly (driver never bailed) or when we give up on a group.
+	protected ref map<SCR_AIGroup, float> m_mBailRecoveryTime = new map<SCR_AIGroup, float>();
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -309,25 +323,56 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 
 	protected void EndYield(RP_YieldedGroupState state)
 	{
-		if (!state || !state.m_Group)
+		if (!state)
 			return;
+		// m_Group may be null here: the traffic system (PruneDead /
+		// ReapCrewLiveAgents) can delete the SCR_AIGroup while we still
+		// hold its yield — when that happens the engine nulls our
+		// reference. Guard every group method call below on it.
 		SCR_AIGroup group = state.m_Group;
 
 		// Remove the spawned Move from the queue and free its entity —
 		// otherwise each yield leaks one waypoint entity.
 		if (state.m_PullOverWaypoint)
 		{
-			group.RemoveWaypoint(state.m_PullOverWaypoint);
+			if (group)
+				group.RemoveWaypoint(state.m_PullOverWaypoint);
 			SCR_EntityHelper.DeleteEntityAndChildren(state.m_PullOverWaypoint);
+			state.m_PullOverWaypoint = null;
 		}
 
-		// Arrest path: don't restore the saved cycle. The civilian
-		// patrol cycle already contains GetIn + drive waypoints, so
-		// re-adding it sends the conscious-but-cuffed captive sprinting
-		// back to the wheel. Delete the orphaned waypoint entities so
-		// they don't leak — they're unreferenced once we skip the
-		// re-add.
-		if (state.m_bArrestSilent)
+		// Group entity is gone — nothing to restore the cycle onto and
+		// nobody to recover. Free the saved waypoint entities so they
+		// don't leak and drop the yield. Without this branch EndYield used
+		// to early-return on the null group WITHOUT removing the map
+		// entry, so CheckReleases re-detected the still-present driverless
+		// vehicle every tick and spammed "Driver bailed …" forever.
+		if (!group)
+		{
+			int freed = 0;
+			foreach (AIWaypoint wp : state.m_aSavedWaypoints)
+			{
+				if (wp)
+				{
+					SCR_EntityHelper.DeleteEntityAndChildren(wp);
+					freed++;
+				}
+			}
+			Print(string.Format("[RP_Yield] EndYield: group entity gone for %1 (crew reaped mid-yield) — dropped yield, freed %2 saved waypoints. Car left for the traffic orphan-vehicle reaper.", state.m_StoppedVehicle, freed), LogLevel.NORMAL);
+			return;
+		}
+
+		// Drop-the-cycle path: don't restore the saved cycle. Two cases
+		// share it:
+		//   - arrest: the civilian patrol cycle already contains GetIn +
+		//     drive waypoints, so re-adding it sends the conscious-but-
+		//     cuffed captive sprinting back to the wheel.
+		//   - repeat-bail give-up: we've stopped trying to recover the
+		//     driver, so there's no cycle to hand back to — the orphaned
+		//     crew member is left for the traffic reap.
+		// Either way, delete the orphaned waypoint entities so they don't
+		// leak — they're unreferenced once we skip the re-add.
+		if (state.m_bArrestSilent || state.m_bRepeatBailGiveUp)
 		{
 			int dropped = 0;
 			foreach (AIWaypoint wp : state.m_aSavedWaypoints)
@@ -339,7 +384,12 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 				}
 			}
 			m_mYieldedGroups.Remove(group);
-			Print(string.Format("[RP_Yield] EndYield (arrest): %1 — dropped %2 saved waypoints, group will idle.", group, dropped), LogLevel.NORMAL);
+			string dropReason;
+			if (state.m_bArrestSilent)
+				dropReason = "arrest";
+			else
+				dropReason = "repeat-bail give-up";
+			Print(string.Format("[RP_Yield] EndYield (%1): %2 — dropped %3 saved waypoints, group will idle.", dropReason, group, dropped), LogLevel.NORMAL);
 			return;
 		}
 
@@ -424,13 +474,32 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 		array<SCR_AIGroup> toRelease = {};
 		foreach (SCR_AIGroup group, RP_YieldedGroupState state : m_mYieldedGroups)
 		{
-			if (!state || !state.m_StoppedVehicle)
+			// Dead/stale entry. The group entity can be deleted out from
+			// under us by the traffic reaper (crew emptied → SCR_AIGroup
+			// destroyed) while m_StoppedVehicle (left as scenery) lives on.
+			// Release it here — otherwise the bail branch below re-fires
+			// every tick on the still-present driverless car and spams
+			// "Driver bailed …" endlessly. The toRelease loop removes the
+			// map entry by key, so a null group can't strand it.
+			if (!state || !state.m_Group || !state.m_StoppedVehicle)
 			{
 				toRelease.Insert(group);
 				continue;
 			}
 			if (!FindDriverEntity(state.m_StoppedVehicle))
 			{
+				// Crew reaped mid-yield (group still alive but emptied of
+				// agents) — there's no driver left to recover. Drop the
+				// cycle quietly; the parked car is the orphan-vehicle
+				// reaper's problem now. Catches the empty-but-not-yet-
+				// deleted case before we waste a GetIn on nobody.
+				if (IsGroupEmpty(group))
+				{
+					Print(string.Format("[RP_Yield] Crew of %1 was reaped mid-yield — dropping yield, no GetIn. Car left for the traffic orphan-vehicle reaper.", state.m_StoppedVehicle), LogLevel.NORMAL);
+					state.m_bRepeatBailGiveUp = true;
+					toRelease.Insert(group);
+					continue;
+				}
 				// Driver is no longer in the seat. Two reasons this
 				// happens: they bailed (walked away on their own), or a
 				// cop downed them and ACE Captives popped them out for
@@ -459,6 +528,25 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 					toRelease.Insert(group);
 					continue;
 				}
+				// Debounce the GetIn recovery. If this group already got a
+				// bail-recovery within the cooldown, re-boarded, re-yielded,
+				// and bailed again, prepending another GetIn just spins at
+				// the same bad geometry (hundreds of identical log lines).
+				// Give up: release without GetIn and let the traffic reap
+				// clean up the now-orphaned crew member.
+				bool hadPriorBail = m_mBailRecoveryTime.Contains(group);
+				float lastBail = 0;
+				if (hadPriorBail)
+					lastBail = m_mBailRecoveryTime.Get(group);
+				if (hadPriorBail && now - lastBail < m_fBailRecoveryCooldownSeconds)
+				{
+					Print(string.Format("[RP_Yield] Driver repeatedly bailed from %1 within %2s — giving up recovery, releasing for traffic reap.", state.m_StoppedVehicle, m_fBailRecoveryCooldownSeconds), LogLevel.WARNING);
+					state.m_bRepeatBailGiveUp = true;
+					m_mBailRecoveryTime.Remove(group);
+					toRelease.Insert(group);
+					continue;
+				}
+				m_mBailRecoveryTime.Set(group, now);
 				Print(string.Format("[RP_Yield] Driver bailed from %1 — releasing yield, will prepend GetIn.", state.m_StoppedVehicle), LogLevel.WARNING);
 				state.m_bDriverBailed = true;
 				toRelease.Insert(group);
@@ -470,8 +558,33 @@ class RP_EmergencyYieldComponent : SCR_BaseGameModeComponent
 		foreach (SCR_AIGroup group : toRelease)
 		{
 			RP_YieldedGroupState state = m_mYieldedGroups.Get(group);
-			EndYield(state);
+			// Remove the map entry by key FIRST, before EndYield touches
+			// the (possibly dead) group. This guarantees the entry is gone
+			// even if EndYield no-ops on a null group — the stale-entry
+			// spin can't recur. EndYield's own Remove then becomes a
+			// harmless no-op.
+			m_mYieldedGroups.Remove(group);
+			// Tidy the bail-time map for every release EXCEPT a first bail
+			// — that one just stamped the timestamp this tick and the
+			// debounce needs it to survive until the (possible) next bail.
+			if (!state || !state.m_bDriverBailed)
+				m_mBailRecoveryTime.Remove(group);
+			if (state)
+				EndYield(state);
 		}
+	}
+
+	// True if the group has no agents left — its crew was reaped (e.g. by
+	// the traffic loop) but the SCR_AIGroup entity hasn't been deleted yet.
+	// Null group counts as empty. Safe on a deleted group: the engine nulls
+	// our reference, so the !group guard catches it before GetAgents.
+	protected bool IsGroupEmpty(SCR_AIGroup group)
+	{
+		if (!group)
+			return true;
+		array<AIAgent> agents = {};
+		group.GetAgents(agents);
+		return agents.IsEmpty();
 	}
 
 	protected float GetWorldTimeSeconds()
