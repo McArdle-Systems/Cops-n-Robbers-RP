@@ -2,15 +2,25 @@ Vehicle {
  ID "BBCBA43A9778AE21"
  components {
   ActionsManagerComponent "{C97BE5489221AE18}" {
+   ActionContexts {
+    UserActionContext "{697E4C23A3401725}" {
+     ContextName "Impound"
+     Position PointInfo "{697E4C23AE1D182C}" {
+      Offset 0 1 0
+     }
+     Radius 5
+    }
+   }
    additionalActions {
     RP_ImpoundVehicleUserAction "{6966EA359CAAD10F}" {
      ParentContextList {
-      "door_l01" "door_l02" "door_r01" "door_r02" "door_rear_hole" "hood" "hood_front"
+      "Impound" "Unflipper"
      }
      UIInfo SCR_ActionUIInfo "{6966EA35812261E6}" {
       Name "Impound Vehicle"
       Description "Impound the vehicle at the Police impound lot"
      }
+     "Sort Priority" -99999
      m_sRequiredFactionKey "Police"
     }
    }
