@@ -24,5 +24,99 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
     }
    }
   }
+  ActionsManagerComponent "{C97BE5489221AE18}" {
+   ActionContexts {
+    UserActionContext "{697E6C0AD1E2FA00}" {
+     ContextName "DistanceKnob"
+     Position PointInfo "{697E6C0AD1E2FA01}" {
+      PivotID "v_body"
+      Offset -0.1364 0.8799 1.0693
+     }
+     Radius 2
+    }
+    UserActionContext "{697E6C0AD1E2FA02}" {
+     ContextName "TargetSpeedKnob"
+     Position PointInfo "{697E6C0AD1E2FA03}" {
+      PivotID "v_body"
+      Offset -0.0978 0.8799 1.0589
+     }
+     Radius 2
+    }
+    UserActionContext "{697E6C0AD1E2FA04}" {
+     ContextName "Toggles"
+     Position PointInfo "{697E6C0AD1E2FA05}" {
+      PivotID "v_body"
+      Offset -0.0591 0.8799 1.0486
+     }
+     Radius 2
+    }
+   }
+   additionalActions {
+    RP_RadarTogglePowerUserAction "{697E6C0AD1E2FB01}" {
+     ParentContextList {
+      "Toggles"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC01}" {
+      Name "Power"
+      Description "Toggle the speed radar on/off."
+     }
+     "Sort Priority" -9999
+    }
+    RP_RadarToggleLPRUserAction "{697E6C0AD1E2FB02}" {
+     ParentContextList {
+      "Toggles"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC02}" {
+      Name "Toggle Plate Reader"
+      Description "Enable/disable the plate-reader (LPR) detection channel."
+     }
+     "Sort Priority" -9998
+    }
+    RP_RadarAdjustDistanceUserAction "{697E6C0AD1E2FB03}" {
+     ParentContextList {
+      "DistanceKnob"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC03}" {
+      Name "Distance +"
+      Description "Increase the radar cone range."
+     }
+     "Sort Priority" -9999
+     m_fDeltaMeters 5
+    }
+    RP_RadarAdjustDistanceUserAction "{697E6C0AD1E2FB04}" {
+     ParentContextList {
+      "DistanceKnob"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC04}" {
+      Name "Distance -"
+      Description "Decrease the radar cone range."
+     }
+     "Sort Priority" -9998
+     m_fDeltaMeters -5
+    }
+    RP_RadarAdjustTargetSpeedUserAction "{697E6C0AD1E2FB05}" {
+     ParentContextList {
+      "TargetSpeedKnob"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC05}" {
+      Name "Target Speed +"
+      Description "Increase the alert speed threshold."
+     }
+     "Sort Priority" -9999
+     m_fDeltaKmh 5
+    }
+    RP_RadarAdjustTargetSpeedUserAction "{697E6C0AD1E2FB06}" {
+     ParentContextList {
+      "TargetSpeedKnob"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC06}" {
+      Name "Target Speed -"
+      Description "Decrease the alert speed threshold."
+     }
+     "Sort Priority" -9998
+     m_fDeltaKmh -5
+    }
+   }
+  }
  }
 }

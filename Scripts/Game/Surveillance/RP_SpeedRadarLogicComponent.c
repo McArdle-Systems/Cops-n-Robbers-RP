@@ -74,6 +74,24 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	[Attribute(defvalue: "SOUND_RADAR_LPR_HIT", desc: "Sound event for the LPR / watchlist hit. Fires once when the target is first recognized as a watched plate. Independent of the speed lock — when a watched plate is also speeding, both sounds trigger on the same tick and play in parallel. Empty = silent. Played 3D positional from the SpeedRadar prop's RP_CopAudioComponent on every client.")]
 	protected string m_sLPRHitSoundEvent;
 
+	// ---- Runtime-adjustable settings (driven by the radar's on-prop
+	// UserActions through RP_PlayerRpcRelayComponent; server-authoritative) ----
+
+	[Attribute(defvalue: "10.0", desc: "Lower clamp (m) for the cone range when adjusted by the Distance - action.")]
+	protected float m_fConeRangeMinMeters;
+
+	[Attribute(defvalue: "120.0", desc: "Upper clamp (m) for the cone range when adjusted by the Distance + action.")]
+	protected float m_fConeRangeMaxMeters;
+
+	[Attribute(defvalue: "10.0", desc: "Lower clamp (km/h) for the speed limit when adjusted by the Target Speed - action.")]
+	protected float m_fSpeedLimitMinKmh;
+
+	[Attribute(defvalue: "200.0", desc: "Upper clamp (km/h) for the speed limit when adjusted by the Target Speed + action.")]
+	protected float m_fSpeedLimitMaxKmh;
+
+	[Attribute(defvalue: "1", desc: "Whether the plate-reader (LPR) detection channel starts enabled. Toggled at runtime by the radar's Toggle Plate Reader action. When off, watched plates no longer trigger a lock/alert (overspeed detection is unaffected).")]
+	protected bool m_bPlateReaderEnabled;
+
 	// Lock-reason bitmask. Used in both the per-lock 'has-fired' tracking
 	// (server-side) and the snapshot payload (server → all clients).
 	// Lets the HUD distinguish overspeed-only, LPR-only, and both, and
@@ -213,6 +231,57 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 		if (!copCar)
 			return null;
 		return RP_SpeedRadarLogicComponent.Cast(copCar.FindComponent(RP_SpeedRadarLogicComponent));
+	}
+
+	// ----------------------------------------------------------------------
+	// Runtime settings API (server-authoritative)
+	// ----------------------------------------------------------------------
+	//
+	// Called from RP_PlayerRpcRelayComponent after a radar UserAction
+	// routes client -> server. Settings are plain server-side fields: the
+	// cone scan and state machine read them live each tick, so a change
+	// takes effect on the next scan with no replication needed. (The
+	// values aren't surfaced to clients yet — the HUD shows live readings,
+	// not the configured thresholds. Add them to the snapshot if a
+	// settings readout is wanted later.)
+
+	float GetConeRange()         { return m_fConeRangeMeters; }
+	float GetSpeedLimit()        { return m_fSpeedLimitKmh; }
+	bool  IsPlateReaderEnabled() { return m_bPlateReaderEnabled; }
+
+	// Adds delta (may be negative) to the cone range, clamped to the
+	// configured min/max. Server-only.
+	void AdjustConeRange(float delta)
+	{
+		if (!Replication.IsServer())
+			return;
+		m_fConeRangeMeters = Math.Clamp(m_fConeRangeMeters + delta, m_fConeRangeMinMeters, m_fConeRangeMaxMeters);
+		Print(string.Format("[RP_SpeedRadarLogic] %1 Cone range -> %2 m (delta %3).", RoleTag(), m_fConeRangeMeters, delta), LogLevel.NORMAL);
+	}
+
+	// Adds delta (may be negative) to the speed limit, clamped to the
+	// configured min/max. Server-only.
+	void AdjustSpeedLimit(float delta)
+	{
+		if (!Replication.IsServer())
+			return;
+		m_fSpeedLimitKmh = Math.Clamp(m_fSpeedLimitKmh + delta, m_fSpeedLimitMinKmh, m_fSpeedLimitMaxKmh);
+		Print(string.Format("[RP_SpeedRadarLogic] %1 Speed limit -> %2 km/h (delta %3).", RoleTag(), m_fSpeedLimitKmh, delta), LogLevel.NORMAL);
+	}
+
+	// Server-only. Enables/disables the plate-reader (LPR) detection
+	// channel. Speed detection is unaffected.
+	void SetPlateReaderEnabled(bool enabled)
+	{
+		if (!Replication.IsServer())
+			return;
+		m_bPlateReaderEnabled = enabled;
+		Print(string.Format("[RP_SpeedRadarLogic] %1 Plate reader -> %2.", RoleTag(), m_bPlateReaderEnabled), LogLevel.NORMAL);
+	}
+
+	void TogglePlateReader()
+	{
+		SetPlateReaderEnabled(!m_bPlateReaderEnabled);
 	}
 
 	// ----------------------------------------------------------------------

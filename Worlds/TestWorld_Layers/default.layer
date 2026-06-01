@@ -85,24 +85,6 @@ $grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/Barbed
   angles 0 -129.486 0
  }
 }
-GenericEntity : "{47F8D83F71EB2B74}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_02/LampStreet_E_02_addon.et" {
- coords 656.089 3.917 535.222
- angles 0 -114.065 0
- {
-  GameEntity {
-   ID "5A42D80F564F3E8B"
-   coords 0.002 0 0.531
-   angles 0 -11.642 0
-   {
-    LightEntity {
-     ID "5990CE56D1255F77"
-     coords 0 -0.137 0.064
-     angles -65 0 0
-    }
-   }
-  }
- }
-}
 GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
  components {
   RP_CopVehicleSpawnerComponent "{69562DEC1EDEDEA4}" {
@@ -155,11 +137,20 @@ StaticModelEntity : "{6C98E4E8DE0A7F79}Prefabs/Vegetation/Plant/Clutter_base.et"
 GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
  coords 655.984 -0.06 534.313
  angles 0 -111.798 0
+}
+GenericEntity : "{B9F8987A84B94738}Prefabs/Structures/Infrastructure/Lamps/LampStreet_E_03/LampStreet_E_03_addon.et" {
+ coords 655.923 4.3 535.713
+ angles 0 -117.149 0
  {
-  GenericEntity {
-   ID "569AF606DB4BC35A"
-   coords 0.263 0 0.41
-   angles 0 -11.642 0
+  GameEntity {
+   ID "599C83EA4EB7679B"
+   {
+    LightEntity {
+     ID "599C83EBB1001549"
+     coords 0 0 0
+     angles -72.746 0 0
+    }
+   }
   }
  }
 }

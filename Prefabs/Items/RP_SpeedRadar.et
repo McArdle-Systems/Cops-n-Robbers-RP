@@ -5,7 +5,7 @@ GenericEntity {
   }
   RP_CopAudioComponent "{6950274F3DD03407}" {
    Filenames {
-    "{5319CE72BC43437D}Assets/Audio/Radar.acp"
+    "{5319CE72BC43437D}Sounds/Radar.acp"
    }
   }
   MeshObject "{6950274A631599D9}" {
@@ -23,9 +23,12 @@ GenericEntity {
    Slots {
     EntitySlotInfo LED {
      Offset 0 0 0
-     Prefab "{7B4D8A3F2E195C01}Prefabs/Items/SpeedRadar_LED.et"
+     Prefab "{7B4D8A3F2E195C01}Prefabs/Items/RP_SpeedRadar_LED.et"
     }
    }
+  }
+  RplComponent "{697ECCA020B47CFE}" {
+   AutoHierarchy 1
   }
   Hierarchy "{6950F33B69DCDD55}" {
   }
