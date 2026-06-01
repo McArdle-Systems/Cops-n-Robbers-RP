@@ -12,6 +12,12 @@
  */
 class RP_RadarTogglePowerUserAction : RP_RadarUserActionBase
 {
+	override bool GetActionNameScript(out string outName)
+	{
+		outName = "Power";
+		return true;
+	}
+
 	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
 	{
 		IEntity copCar = FindRadarVehicle(pOwnerEntity);

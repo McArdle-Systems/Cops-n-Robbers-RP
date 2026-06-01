@@ -33,6 +33,8 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Offset -0.1364 0.8799 1.0693
      }
      Radius 2
+     FilterActionsUsingCache 0
+     SkipCullingPlaneDetection 1
     }
     UserActionContext "{697E6C0AD1E2FA02}" {
      ContextName "TargetSpeedKnob"
@@ -41,17 +43,40 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Offset -0.0978 0.8799 1.0589
      }
      Radius 2
+     FilterActionsUsingCache 0
+     SkipCullingPlaneDetection 1
     }
-    UserActionContext "{697E6C0AD1E2FA04}" {
+    RP_RadarUserActionContext "{697E6C0AD1E2FA04}" {
+     UIInfo SCR_ActionContextUIInfo "{698234B7BF8FE6D1}" {
+      Name "Toggles Action Context"
+      Description "The Toggles Action Context description."
+     }
      ContextName "Toggles"
      Position PointInfo "{697E6C0AD1E2FA05}" {
-      PivotID "v_body"
-      Offset -0.0591 0.8799 1.0486
+      Offset -0.0625 1.5965 1.0351
+      Angles 0 180 0
      }
      Radius 2
+     Omnidirectional 0
+     FilterActionsUsingCache 0
+     SkipCullingPlaneDetection 1
     }
    }
    additionalActions {
+    SCR_UnflipVehicleAction "{5C96333D28423C46}" {
+     m_fMassToForce 8
+     m_fForceLimit 12000
+     m_fLinearSpeedLimit 1.5
+     m_fAngularSpeedLimit 1.5
+     m_fSuggestedUsersMultiplier 0
+    }
+    SCR_UnflipVehicleAction "{5D5F64CA576C1D07}" {
+     m_fMassToForce 8
+     m_fForceLimit 12000
+     m_fLinearSpeedLimit 1.5
+     m_fAngularSpeedLimit 1.5
+     m_fSuggestedUsersMultiplier 0
+    }
     RP_RadarTogglePowerUserAction "{697E6C0AD1E2FB01}" {
      ParentContextList {
       "Toggles"
@@ -61,6 +86,10 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Toggle the speed radar on/off."
      }
      "Sort Priority" -9999
+     m_sActionStateOn "ON"
+     m_sActionStateOff "OFF"
+     m_bPilotOnly 0
+     m_sForcedContextName "Toggles"
     }
     RP_RadarToggleLPRUserAction "{697E6C0AD1E2FB02}" {
      ParentContextList {
@@ -71,6 +100,7 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Enable/disable the plate-reader (LPR) detection channel."
      }
      "Sort Priority" -9998
+     m_sForcedContextName "Toggles"
     }
     RP_RadarAdjustDistanceUserAction "{697E6C0AD1E2FB03}" {
      ParentContextList {
@@ -81,6 +111,7 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Increase the radar cone range."
      }
      "Sort Priority" -9999
+     m_sForcedContextName "DistanceKnob"
      m_fDeltaMeters 5
     }
     RP_RadarAdjustDistanceUserAction "{697E6C0AD1E2FB04}" {
@@ -92,6 +123,7 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Decrease the radar cone range."
      }
      "Sort Priority" -9998
+     m_sForcedContextName "DistanceKnob"
      m_fDeltaMeters -5
     }
     RP_RadarAdjustTargetSpeedUserAction "{697E6C0AD1E2FB05}" {
@@ -103,6 +135,7 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Increase the alert speed threshold."
      }
      "Sort Priority" -9999
+     m_sForcedContextName "TargetSpeedKnob"
      m_fDeltaKmh 5
     }
     RP_RadarAdjustTargetSpeedUserAction "{697E6C0AD1E2FB06}" {
@@ -114,6 +147,7 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
       Description "Decrease the alert speed threshold."
      }
      "Sort Priority" -9998
+     m_sForcedContextName "TargetSpeedKnob"
      m_fDeltaKmh -5
     }
    }

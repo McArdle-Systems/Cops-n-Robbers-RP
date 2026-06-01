@@ -12,6 +12,16 @@ class RP_RadarAdjustTargetSpeedUserAction : RP_RadarUserActionBase
 	[Attribute(defvalue: "5.0", desc: "km/h added to the target speed (alert threshold) per press. Use a negative value for the 'decrease' knob.")]
 	protected float m_fDeltaKmh;
 
+	override bool GetActionNameScript(out string outName)
+	{
+		if (m_fDeltaKmh >= 0)
+			outName = "Target Speed +";
+		else
+			outName = "Target Speed -";
+
+		return true;
+	}
+
 	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
 	{
 		IEntity copCar = FindRadarVehicle(pOwnerEntity);

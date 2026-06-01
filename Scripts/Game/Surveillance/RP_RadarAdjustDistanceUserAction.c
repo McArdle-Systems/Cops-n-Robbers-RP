@@ -11,6 +11,16 @@ class RP_RadarAdjustDistanceUserAction : RP_RadarUserActionBase
 	[Attribute(defvalue: "5.0", desc: "Metres added to the cone range per press. Use a negative value for the 'decrease' knob.")]
 	protected float m_fDeltaMeters;
 
+	override bool GetActionNameScript(out string outName)
+	{
+		if (m_fDeltaMeters >= 0)
+			outName = "Distance +";
+		else
+			outName = "Distance -";
+
+		return true;
+	}
+
 	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
 	{
 		IEntity copCar = FindRadarVehicle(pOwnerEntity);

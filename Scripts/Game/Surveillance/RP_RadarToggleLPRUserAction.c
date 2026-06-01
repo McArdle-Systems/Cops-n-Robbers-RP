@@ -8,6 +8,12 @@
  */
 class RP_RadarToggleLPRUserAction : RP_RadarUserActionBase
 {
+	override bool GetActionNameScript(out string outName)
+	{
+		outName = "Toggle Plate Reader";
+		return true;
+	}
+
 	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
 	{
 		IEntity copCar = FindRadarVehicle(pOwnerEntity);

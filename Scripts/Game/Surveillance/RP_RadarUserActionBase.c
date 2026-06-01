@@ -4,105 +4,185 @@
  * Shared base for the speed radar's UserActions (Distance +/-, Target
  * Speed +/-, Power, Plate Reader).
  *
- * Base class: SCR_ScriptedUserAction (NOT plain ScriptedUserAction, and NOT
- * SCR_VehicleActionBase). SCR_ScriptedUserAction adds m_eShownInVehicleState
- * - the enum the interaction handler reads to decide whether an action is
- * offered to a SEATED occupant. A plain ScriptedUserAction has no such field,
- * so the handler defaults it to hidden in-vehicle no matter what
- * CanBeShownScript returns (that's why the on-foot-only behaviour we kept
- * hitting). SCR_VehicleActionBase would surface seated too, but it is built
- * for stateful on/off vehicle toggles: it overrides GetActionNameScript to
- * name the action from an on/off state and ties CanBePerformed/PerformAction
- * to a CompartmentControllerComponent - both wrong for our relay-routed,
- * non-toggle increment knobs.
- *
- * Hosting: these actions live on the COP CAR's own ActionsManagerComponent
- * (Vehicle_Base.et), not the slotted radar prop - the seated action collector
- * only reads the vehicle's own manager. The three contexts are anchored to
- * the "v_body" pivot so the points ride the radar's physical buttons.
- *
- * Original on-button context offsets (v_body space), before the diagnostic
- * "float them clear of the geometry" move - restore these once seated
- * visibility is confirmed:
- *   1. DistanceKnob    -0.1364 0.8799 1.0693
- *   2. TargetSpeedKnob -0.0978 0.8799 1.0589
- *   3. Toggles         -0.0591 0.8799 1.0486
- * (Currently floated to Y 1.5799 to rule out geometry occlusion.)
- *
- * Helpers:
- *   FindRadarVehicle(start) - walks up from the action owner (the cop car)
- *       to the Vehicle that carries the RP_SpeedRadarLogicComponent. That
- *       vehicle is the relay RPC handle; a null result also means "this car
- *       has no radar", hiding the actions on every non-radar vehicle that
- *       inherits Vehicle_Base.
- *   GetRelay() - the local player's RP_PlayerRpcRelayComponent.
- *
- * Why route through the relay: ScriptedUserAction.PerformAction runs on the
- * interacting client, not the server, and radar settings are server-
- * authoritative (RP_SpeedRadarLogicComponent). Bridging through
- * RP_PlayerRpcRelayComponent (on the client-owned player character) is the
- * same client->server pattern the impound and radar-power paths use.
- *
- * Assign one of the concrete subclasses, not this base. Action display names
- * come from each action's UIInfo configured in Workbench.
+ * These actions currently live on the cop vehicle's ActionsManagerComponent.
+ * A slotted radar prop can instantiate actions, but the player interaction
+ * collector does not query those child actions in this setup.
  */
-class RP_RadarUserActionBase : SCR_ScriptedUserAction
+class RP_RadarUserActionBase : SCR_VehicleActionBase
 {
 	[Attribute(defvalue: "Police", desc: "Faction key allowed to see/use these radar actions. Empty = no restriction.")]
 	protected string m_sRequiredFactionKey;
 
-	// Force the in-vehicle visibility state. m_eShownInVehicleState (from
-	// SCR_ScriptedUserAction) defaults to IGNORE = hidden to a seated
-	// occupant; the interaction handler reads it directly. IN_VEHICLE_ANY
-	// shows to any seated occupant (swap to IN_VEHICLE_PILOT for driver
-	// only). Set here rather than in the prefab to avoid the enum-in-.et
-	// reset pitfall.
+	[Attribute(defvalue: "", desc: "Optional action context name to force as this action's active context.")]
+	protected string m_sForcedContextName;
+
+	protected string m_sLastVisibilityDebug;
+	protected string m_sLastPerformDebug;
+
 	override void Init(IEntity pOwnerEntity, GenericComponent pManagerComponent)
 	{
 		super.Init(pOwnerEntity, pManagerComponent);
-		m_eShownInVehicleState = EUserActionInVehicleState.IN_VEHICLE_ANY;
+		m_bInteriorOnly = true;
+		m_bPilotOnly = false;
+		m_bIsToggle = false;
+		ForceRadarContext();
+		Print(string.Format("[RP_RadarActionDbg] Init %1 owner=%2 manager=%3",
+			this,
+			pOwnerEntity,
+			pManagerComponent),
+			LogLevel.NORMAL);
+		Print(string.Format("[RP_RadarActionDbg] ContextIndexes %1 Toggles=%2 starter_switch=%3 DistanceKnob=%4 TargetSpeedKnob=%5",
+			this,
+			GetContextIndex("Toggles"),
+			GetContextIndex("starter_switch"),
+			GetContextIndex("DistanceKnob"),
+			GetContextIndex("TargetSpeedKnob")),
+			LogLevel.NORMAL);
 	}
 
-	// Visibility gate for the local interacting player.
-	//
-	// CRITICAL: chain super FIRST. SCR_ScriptedUserAction.CanBeShownScript is
-	// where m_eShownInVehicleState is actually consulted to decide seated
-	// visibility - if we replace it without calling super, that seated check
-	// never runs and the action is hidden to any occupant no matter what we
-	// set the enum to (this was the long-standing "shows on foot, never
-	// seated" bug). Then layer our own guards:
-	//   1. Hide on any vehicle that carries no radar logic.
-	//   2. Faction - hide the radar controls from non-Police (robbers).
 	override bool CanBeShownScript(IEntity user)
 	{
-		if (!super.CanBeShownScript(user))
-			return false;
-
-		if (!FindRadarVehicle(GetOwner()))
-			return false;
-
-		return PassesFactionCheck(user);
+		ForceRadarContext();
+		bool shown = PassesFactionCheck(user);
+		DebugVisibility(shown, user);
+		return shown;
 	}
 
-	// Mirrors the faction gate used by RP_ImpoundVehicleUserAction: walk
-	// the user hierarchy for the affiliation component and compare keys.
+	override bool CanBePerformedScript(IEntity user)
+	{
+		ForceRadarContext();
+		bool canPerform = PassesFactionCheck(user);
+		DebugPerform(canPerform, user);
+
+		if (!canPerform)
+			SetCannotPerformReason("Police only.");
+
+		return canPerform;
+	}
+
 	protected bool PassesFactionCheck(IEntity user)
 	{
 		if (m_sRequiredFactionKey.IsEmpty())
 			return true;
 
+		if (EntityHasFaction(user, m_sRequiredFactionKey))
+			return true;
+
+		IEntity controlled = GetLocalControlledEntity();
+		if (controlled && controlled != user)
+			return EntityHasFaction(controlled, m_sRequiredFactionKey);
+
+		return false;
+	}
+
+	protected bool EntityHasFaction(IEntity user, string factionKey)
+	{
+		return GetEntityFactionKey(user) == factionKey;
+	}
+
+	protected string GetEntityFactionKey(IEntity user)
+	{
 		IEntity current = user;
 		while (current)
 		{
 			FactionAffiliationComponent faff = FactionAffiliationComponent.Cast(current.FindComponent(FactionAffiliationComponent));
 			if (faff)
-				return faff.GetAffiliatedFactionKey() == m_sRequiredFactionKey;
+				return faff.GetAffiliatedFactionKey();
 			current = current.GetParent();
 		}
-		return false;
+		return "";
 	}
 
-	// Walk up to the Vehicle that owns the radar logic component.
+	protected IEntity GetLocalControlledEntity()
+	{
+		PlayerController pc = GetGame().GetPlayerController();
+		if (!pc)
+			return null;
+		return pc.GetControlledEntity();
+	}
+
+	protected void DebugVisibility(bool shown, IEntity user)
+	{
+		string state = string.Format("%1:%2:%3", shown, user, GetOwner());
+		if (state == m_sLastVisibilityDebug)
+			return;
+		m_sLastVisibilityDebug = state;
+
+		Print(string.Format("[RP_RadarActionDbg] ShowCheck %1 activeContext='%2' shown=%3 owner=%4 user=%5",
+			this,
+			GetActiveContextDebugName(),
+			shown,
+			GetOwner(),
+			user),
+			LogLevel.NORMAL);
+	}
+
+	protected void DebugPerform(bool canPerform, IEntity user)
+	{
+		string state = string.Format("%1:%2:%3:%4", canPerform, user, GetOwner(), GetActiveContextDebugName());
+		if (state == m_sLastPerformDebug)
+			return;
+		m_sLastPerformDebug = state;
+
+		Print(string.Format("[RP_RadarActionDbg] PerformCheck %1 activeContext='%2' name='%3' canPerform=%4 user=%5",
+			this,
+			GetActiveContextDebugName(),
+			GetActionName(),
+			canPerform,
+			user),
+			LogLevel.NORMAL);
+	}
+
+	protected string GetActiveContextDebugName()
+	{
+		UserActionContext context = GetActiveContext();
+		if (!context)
+			return "<none>";
+
+		return context.GetContextName();
+	}
+
+	protected string GetActiveContextDebugDescription()
+	{
+		UserActionContext context = GetActiveContext();
+		if (!context)
+			return "<none>";
+
+		RP_RadarUserActionContext radarContext = RP_RadarUserActionContext.Cast(context);
+		if (radarContext)
+			return radarContext.GetRadarDebugDescription();
+
+		return string.Format("name='%1' radius=%2 origin=%3 actions=%4",
+			context.GetContextName(),
+			context.GetRadius(),
+			context.GetOrigin(),
+			context.GetActionsCount());
+	}
+
+	protected void ForceRadarContext()
+	{
+		if (m_sForcedContextName.IsEmpty())
+			return;
+
+		UserActionContext activeContext = GetActiveContext();
+		if (activeContext && activeContext.GetContextName() == m_sForcedContextName)
+			return;
+
+		ActionsManagerComponent manager = GetActionsManager();
+		if (!manager)
+			return;
+
+		UserActionContext forcedContext = manager.GetContext(m_sForcedContextName);
+		if (!forcedContext)
+			return;
+
+		SetActiveContext(forcedContext);
+		Print(string.Format("[RP_RadarActionDbg] ForcedContext %1 %2",
+			this,
+			GetActiveContextDebugDescription()),
+			LogLevel.NORMAL);
+	}
+
 	protected IEntity FindRadarVehicle(IEntity start)
 	{
 		IEntity current = start;
