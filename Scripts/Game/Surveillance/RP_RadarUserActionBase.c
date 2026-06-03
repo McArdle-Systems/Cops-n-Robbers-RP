@@ -1,63 +1,62 @@
 /**
  * RP_RadarUserActionBase
  *
- * Shared base for the speed radar's UserActions (Distance +/-, Target
- * Speed +/-, Power, Plate Reader).
+ * Shared base for the speed radar's vehicle UserActions (Distance +/-,
+ * Target Speed +/-, Power, Plate Reader).
  *
- * These actions currently live on the cop vehicle's ActionsManagerComponent.
- * A slotted radar prop can instantiate actions, but the player interaction
- * collector does not query those child actions in this setup.
+ * Canonical SCR_VehicleActionBase usage: the engine owns discovery and
+ * vehicle/compartment visibility. The only thing we layer on is a
+ * police-faction gate, applied on top of the base show/perform checks.
+ *
+ * Positioning comes from each action's ParentContextList in the vehicle
+ * prefab. Interior / pilot visibility is driven by the inherited prefab
+ * attributes (m_bInteriorOnly, m_bPilotOnly) - we do NOT force them in code.
  */
 class RP_RadarUserActionBase : SCR_VehicleActionBase
 {
 	[Attribute(defvalue: "Police", desc: "Faction key allowed to see/use these radar actions. Empty = no restriction.")]
 	protected string m_sRequiredFactionKey;
 
-	[Attribute(defvalue: "", desc: "Optional action context name to force as this action's active context.")]
-	protected string m_sForcedContextName;
-
-	protected string m_sLastVisibilityDebug;
-	protected string m_sLastPerformDebug;
+	// Cached at Init so the label builders (GetActionNameScript, which has no
+	// owner param) can resolve the radar logic each frame.
+	protected IEntity m_OwnerEntity;
 
 	override void Init(IEntity pOwnerEntity, GenericComponent pManagerComponent)
 	{
 		super.Init(pOwnerEntity, pManagerComponent);
-		m_bInteriorOnly = true;
-		m_bPilotOnly = false;
-		m_bIsToggle = false;
-		ForceRadarContext();
-		Print(string.Format("[RP_RadarActionDbg] Init %1 owner=%2 manager=%3",
-			this,
-			pOwnerEntity,
-			pManagerComponent),
-			LogLevel.NORMAL);
-		Print(string.Format("[RP_RadarActionDbg] ContextIndexes %1 Toggles=%2 starter_switch=%3 DistanceKnob=%4 TargetSpeedKnob=%5",
-			this,
-			GetContextIndex("Toggles"),
-			GetContextIndex("starter_switch"),
-			GetContextIndex("DistanceKnob"),
-			GetContextIndex("TargetSpeedKnob")),
-			LogLevel.NORMAL);
+		m_OwnerEntity = pOwnerEntity;
+	}
+
+	// Resolves the radar logic component from the cached owner. Null until
+	// Init has run or if the owner isn't under a radar-equipped vehicle.
+	protected RP_SpeedRadarLogicComponent GetRadarLogic()
+	{
+		IEntity car = FindRadarVehicle(m_OwnerEntity);
+		if (!car)
+			return null;
+		return RP_SpeedRadarLogicComponent.FindOnVehicle(car);
 	}
 
 	override bool CanBeShownScript(IEntity user)
 	{
-		ForceRadarContext();
-		bool shown = PassesFactionCheck(user);
-		DebugVisibility(shown, user);
-		return shown;
+		if (!super.CanBeShownScript(user))
+			return false;
+
+		return PassesFactionCheck(user);
 	}
 
 	override bool CanBePerformedScript(IEntity user)
 	{
-		ForceRadarContext();
-		bool canPerform = PassesFactionCheck(user);
-		DebugPerform(canPerform, user);
+		if (!super.CanBePerformedScript(user))
+			return false;
 
-		if (!canPerform)
+		if (!PassesFactionCheck(user))
+		{
 			SetCannotPerformReason("Police only.");
+			return false;
+		}
 
-		return canPerform;
+		return true;
 	}
 
 	protected bool PassesFactionCheck(IEntity user)
@@ -99,88 +98,6 @@ class RP_RadarUserActionBase : SCR_VehicleActionBase
 		if (!pc)
 			return null;
 		return pc.GetControlledEntity();
-	}
-
-	protected void DebugVisibility(bool shown, IEntity user)
-	{
-		string state = string.Format("%1:%2:%3", shown, user, GetOwner());
-		if (state == m_sLastVisibilityDebug)
-			return;
-		m_sLastVisibilityDebug = state;
-
-		Print(string.Format("[RP_RadarActionDbg] ShowCheck %1 activeContext='%2' shown=%3 owner=%4 user=%5",
-			this,
-			GetActiveContextDebugName(),
-			shown,
-			GetOwner(),
-			user),
-			LogLevel.NORMAL);
-	}
-
-	protected void DebugPerform(bool canPerform, IEntity user)
-	{
-		string state = string.Format("%1:%2:%3:%4", canPerform, user, GetOwner(), GetActiveContextDebugName());
-		if (state == m_sLastPerformDebug)
-			return;
-		m_sLastPerformDebug = state;
-
-		Print(string.Format("[RP_RadarActionDbg] PerformCheck %1 activeContext='%2' name='%3' canPerform=%4 user=%5",
-			this,
-			GetActiveContextDebugName(),
-			GetActionName(),
-			canPerform,
-			user),
-			LogLevel.NORMAL);
-	}
-
-	protected string GetActiveContextDebugName()
-	{
-		UserActionContext context = GetActiveContext();
-		if (!context)
-			return "<none>";
-
-		return context.GetContextName();
-	}
-
-	protected string GetActiveContextDebugDescription()
-	{
-		UserActionContext context = GetActiveContext();
-		if (!context)
-			return "<none>";
-
-		RP_RadarUserActionContext radarContext = RP_RadarUserActionContext.Cast(context);
-		if (radarContext)
-			return radarContext.GetRadarDebugDescription();
-
-		return string.Format("name='%1' radius=%2 origin=%3 actions=%4",
-			context.GetContextName(),
-			context.GetRadius(),
-			context.GetOrigin(),
-			context.GetActionsCount());
-	}
-
-	protected void ForceRadarContext()
-	{
-		if (m_sForcedContextName.IsEmpty())
-			return;
-
-		UserActionContext activeContext = GetActiveContext();
-		if (activeContext && activeContext.GetContextName() == m_sForcedContextName)
-			return;
-
-		ActionsManagerComponent manager = GetActionsManager();
-		if (!manager)
-			return;
-
-		UserActionContext forcedContext = manager.GetContext(m_sForcedContextName);
-		if (!forcedContext)
-			return;
-
-		SetActiveContext(forcedContext);
-		Print(string.Format("[RP_RadarActionDbg] ForcedContext %1 %2",
-			this,
-			GetActiveContextDebugDescription()),
-			LogLevel.NORMAL);
 	}
 
 	protected IEntity FindRadarVehicle(IEntity start)

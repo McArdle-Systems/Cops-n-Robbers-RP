@@ -309,6 +309,47 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 		logic.TogglePlateReader();
 	}
 
+	void RequestRadarToggleSpeedAlert(IEntity copCar)
+	{
+		if (!copCar)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyRadarToggleSpeedAlert(copCar);
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(copCar.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestRadarToggleSpeedAlert: copCar %1 has no RplComponent — RPC skipped.", copCar), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_RadarToggleSpeedAlert, rpl.Id());
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_RadarToggleSpeedAlert(RplId vehicleId)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_RadarToggleSpeedAlert: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyRadarToggleSpeedAlert(rpl.GetEntity());
+	}
+
+	protected void ApplyRadarToggleSpeedAlert(IEntity copCar)
+	{
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarToggleSpeedAlert: cop car %1 has no RP_SpeedRadarLogicComponent.", copCar), LogLevel.WARNING);
+			return;
+		}
+		logic.ToggleSpeedAlert();
+	}
+
 	// ----------------------------------------------------------------------
 	// Public entry: impound vehicle
 	// ----------------------------------------------------------------------

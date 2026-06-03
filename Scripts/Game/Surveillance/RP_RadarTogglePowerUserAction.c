@@ -14,7 +14,17 @@ class RP_RadarTogglePowerUserAction : RP_RadarUserActionBase
 {
 	override bool GetActionNameScript(out string outName)
 	{
-		outName = "Power";
+		// Label shows the state a press will switch the radar TO, matching
+		// the knob actions' live-value style. Powered (non-OFF snapshot) =>
+		// next press powers down, so show "Power: OFF".
+		bool isOn = false;
+		RP_SpeedRadarLogicComponent logic = GetRadarLogic();
+		if (logic)
+			isOn = logic.GetSnapshotState() != ERP_RadarVisualState.OFF;
+		if (isOn)
+			outName = "Power: OFF";
+		else
+			outName = "Power: ON";
 		return true;
 	}
 

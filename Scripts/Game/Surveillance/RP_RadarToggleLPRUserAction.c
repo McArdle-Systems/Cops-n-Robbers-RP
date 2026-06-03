@@ -10,7 +10,17 @@ class RP_RadarToggleLPRUserAction : RP_RadarUserActionBase
 {
 	override bool GetActionNameScript(out string outName)
 	{
-		outName = "Toggle Plate Reader";
+		// Label shows the state a press will switch the plate reader TO.
+		// Enabled => next press disables, so show "LPR: OFF". Reads the
+		// replicated snapshot flag so it's live on every client.
+		bool isOn = false;
+		RP_SpeedRadarLogicComponent logic = GetRadarLogic();
+		if (logic)
+			isOn = logic.GetSnapshotPlateReaderEnabled();
+		if (isOn)
+			outName = "LPR Alert: OFF";
+		else
+			outName = "LPR Alert: ON";
 		return true;
 	}
 
