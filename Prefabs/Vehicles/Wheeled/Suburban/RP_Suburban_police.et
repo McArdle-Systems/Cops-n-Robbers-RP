@@ -3,6 +3,15 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
  components {
   AG0_MFDManagerComponent "{697A45C84843A898}" {
   }
+  BaseLightManagerComponent "{51E210F17D2534F7}" {
+   LightAction {
+    SCR_LightsDashboardUserAction "{66D159115FEE2777}" {
+     UIInfo UIInfo "{66D15911493B6DF2}" {
+      Name "Flashing Lights"
+     }
+    }
+   }
+  }
   RP_PoliceVehicleComponent "{697A45C84B008945}" {
   }
   RP_SpeedRadarLogicComponent "{697A45C85877B627}" {
@@ -21,6 +30,143 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
      Offset -0.09 0.9717 1.0879
      Angles 0 -165.1198 -180
      Prefab "{7B4D8A3F2E195D01}Prefabs/Items/RP_SpeedRadar_Screen.et"
+    }
+   }
+  }
+  ActionsManagerComponent "{C97BE5489221AE18}" {
+   ActionContexts {
+    UserActionContext "{697E6C0AD1E2FA00}" {
+     ContextName "DistanceKnob"
+     Position PointInfo "{697E6C0AD1E2FA01}" {
+      PivotID "v_body"
+      Offset -0.1364 0.8799 1.0693
+      Angles 0 180 0
+     }
+     Radius 2
+    }
+    UserActionContext "{697E6C0AD1E2FA02}" {
+     ContextName "TargetSpeedKnob"
+     Position PointInfo "{697E6C0AD1E2FA03}" {
+      PivotID "v_body"
+      Offset -0.0978 0.8799 1.0589
+      Angles 0 180 0
+     }
+     Radius 2
+    }
+    RP_RadarUserActionContext "{697E6C0AD1E2FA04}" {
+     UIInfo SCR_ActionContextUIInfo "{698234B7BF8FE6D1}" {
+      Name "Toggles Action Context"
+      Description "The Toggles Action Context description."
+     }
+     ContextName "Toggles"
+     Position PointInfo "{697E6C0AD1E2FA05}" {
+      Offset -0.0625 1.5965 1.0351
+      Angles 0 180 0
+     }
+     Radius 2
+    }
+   }
+   additionalActions {
+    SCR_UnflipVehicleAction "{5C96333D28423C46}" {
+     m_fMassToForce 8
+     m_fForceLimit 12000
+     m_fLinearSpeedLimit 1.5
+     m_fAngularSpeedLimit 1.5
+     m_fSuggestedUsersMultiplier 0
+    }
+    SCR_UnflipVehicleAction "{5D5F64CA576C1D07}" {
+     m_fMassToForce 8
+     m_fForceLimit 12000
+     m_fLinearSpeedLimit 1.5
+     m_fAngularSpeedLimit 1.5
+     m_fSuggestedUsersMultiplier 0
+    }
+    RP_RadarTogglePowerUserAction "{697E6C0AD1E2FB01}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC01}" {
+      Name "Power"
+      Description "Toggle the speed radar unit on/off."
+     }
+     "Sort Priority" 1
+     m_bPilotOnly 0
+    }
+    RP_RadarToggleLPRUserAction "{697E6C0AD1E2FB02}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC02}" {
+      Name "LPR Alert"
+      Description "Enable/disable the plate-reader (LPR) detection channel."
+     }
+     "Sort Priority" 2
+    }
+    RP_RadarToggleSpeedAlertUserAction "{697E6C0AD1E2FB03}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{697E6C0AD1E2FC03}" {
+      Name "Speed Alert"
+      Description "Enable/disable the speed-alert detection channel."
+     }
+     "Sort Priority" 3
+    }
+    RP_RadarSignalIncreaseUserAction "{69851442496BC59C}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{698514424E45D7D7}" {
+      Name "Distance +"
+     }
+     ActionTitle "Distance +"
+     "Sort Priority" 4
+     "Signal name" "radar_cone_range_m"
+     "Max value" 120
+     "Min value" 10
+     m_sValueUnit "m"
+    }
+    RP_RadarSignalDecreaseUserAction "{6985144237C6FB1F}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{69851442A9E8CF92}" {
+      Name "Distance -"
+     }
+     ActionTitle "Distance -"
+     "Sort Priority" 5
+     "Signal name" "radar_cone_range_m"
+     "Max value" 120
+     "Min value" 10
+     m_sValueUnit "m"
+    }
+    RP_RadarSignalIncreaseUserAction "{698514420000AA01}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{698514420000AA02}" {
+      Name "Speed +"
+     }
+     ActionTitle "Speed +"
+     "Sort Priority" 6
+     "Signal name" "radar_target_speed_kmh"
+     "Max value" 200
+     "Min value" 10
+     m_sValueUnit "km/h"
+    }
+    RP_RadarSignalDecreaseUserAction "{698514420000AA03}" {
+     ParentContextList {
+      "siren_lights"
+     }
+     UIInfo SCR_ActionUIInfo "{698514420000AA04}" {
+      Name "Speed -"
+     }
+     ActionTitle "Speed -"
+     "Sort Priority" 7
+     "Signal name" "radar_target_speed_kmh"
+     "Max value" 200
+     "Min value" 10
+     m_sValueUnit "km/h"
     }
    }
   }

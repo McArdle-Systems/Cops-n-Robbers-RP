@@ -176,6 +176,181 @@ class RP_PlayerRpcRelayComponent : ScriptComponent
 	}
 
 	// ----------------------------------------------------------------------
+	// Public entry: radar settings (on-prop UserActions)
+	// ----------------------------------------------------------------------
+	//
+	// The radar's on-prop knobs/buttons are ScriptedUserActions, whose
+	// PerformAction runs on the interacting client. The settings they
+	// change live on the server-authoritative RP_SpeedRadarLogicComponent,
+	// so each routes through here exactly like RequestRadarPower above:
+	// client -> RpcAsk_* (Server) -> Apply* -> component setter. copCar is
+	// the radar-equipped vehicle the action walked up to.
+
+	void RequestRadarAdjustDistance(IEntity copCar, float deltaMeters)
+	{
+		if (!copCar)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyRadarAdjustDistance(copCar, deltaMeters);
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(copCar.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestRadarAdjustDistance: copCar %1 has no RplComponent — RPC skipped.", copCar), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_RadarAdjustDistance, rpl.Id(), deltaMeters);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_RadarAdjustDistance(RplId vehicleId, float deltaMeters)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_RadarAdjustDistance: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyRadarAdjustDistance(rpl.GetEntity(), deltaMeters);
+	}
+
+	protected void ApplyRadarAdjustDistance(IEntity copCar, float deltaMeters)
+	{
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarAdjustDistance: cop car %1 has no RP_SpeedRadarLogicComponent.", copCar), LogLevel.WARNING);
+			return;
+		}
+		logic.AdjustConeRange(deltaMeters);
+	}
+
+	void RequestRadarAdjustSpeed(IEntity copCar, float deltaKmh)
+	{
+		if (!copCar)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyRadarAdjustSpeed(copCar, deltaKmh);
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(copCar.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestRadarAdjustSpeed: copCar %1 has no RplComponent — RPC skipped.", copCar), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_RadarAdjustSpeed, rpl.Id(), deltaKmh);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_RadarAdjustSpeed(RplId vehicleId, float deltaKmh)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_RadarAdjustSpeed: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyRadarAdjustSpeed(rpl.GetEntity(), deltaKmh);
+	}
+
+	protected void ApplyRadarAdjustSpeed(IEntity copCar, float deltaKmh)
+	{
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarAdjustSpeed: cop car %1 has no RP_SpeedRadarLogicComponent.", copCar), LogLevel.WARNING);
+			return;
+		}
+		logic.AdjustSpeedLimit(deltaKmh);
+	}
+
+	void RequestRadarToggleLPR(IEntity copCar)
+	{
+		if (!copCar)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyRadarToggleLPR(copCar);
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(copCar.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestRadarToggleLPR: copCar %1 has no RplComponent — RPC skipped.", copCar), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_RadarToggleLPR, rpl.Id());
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_RadarToggleLPR(RplId vehicleId)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_RadarToggleLPR: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyRadarToggleLPR(rpl.GetEntity());
+	}
+
+	protected void ApplyRadarToggleLPR(IEntity copCar)
+	{
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarToggleLPR: cop car %1 has no RP_SpeedRadarLogicComponent.", copCar), LogLevel.WARNING);
+			return;
+		}
+		logic.TogglePlateReader();
+	}
+
+	void RequestRadarToggleSpeedAlert(IEntity copCar)
+	{
+		if (!copCar)
+			return;
+		if (Replication.IsServer())
+		{
+			ApplyRadarToggleSpeedAlert(copCar);
+			return;
+		}
+		RplComponent rpl = RplComponent.Cast(copCar.FindComponent(RplComponent));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RequestRadarToggleSpeedAlert: copCar %1 has no RplComponent — RPC skipped.", copCar), LogLevel.WARNING);
+			return;
+		}
+		Rpc(RpcAsk_RadarToggleSpeedAlert, rpl.Id());
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_RadarToggleSpeedAlert(RplId vehicleId)
+	{
+		RplComponent rpl = RplComponent.Cast(Replication.FindItem(vehicleId));
+		if (!rpl)
+		{
+			Print(string.Format("[RP_RpcRelay] RpcAsk_RadarToggleSpeedAlert: no entity for RplId=%1 on server.", vehicleId), LogLevel.WARNING);
+			return;
+		}
+		ApplyRadarToggleSpeedAlert(rpl.GetEntity());
+	}
+
+	protected void ApplyRadarToggleSpeedAlert(IEntity copCar)
+	{
+		RP_SpeedRadarLogicComponent logic = RP_SpeedRadarLogicComponent.FindOnVehicle(copCar);
+		if (!logic)
+		{
+			Print(string.Format("[RP_RpcRelay] ApplyRadarToggleSpeedAlert: cop car %1 has no RP_SpeedRadarLogicComponent.", copCar), LogLevel.WARNING);
+			return;
+		}
+		logic.ToggleSpeedAlert();
+	}
+
+	// ----------------------------------------------------------------------
 	// Public entry: impound vehicle
 	// ----------------------------------------------------------------------
 	//

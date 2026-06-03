@@ -129,9 +129,16 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 	protected bool m_bFlashOn;
 	protected float m_fFlashNextToggle;
 
+	// Local singleton so the on-prop Power UserAction can mirror the
+	// overlay (open on power-on, close on power-off) for the seated cop.
+	// Exists on every peer since the HUD component lives on the GameMode.
+	protected static RP_SurveillanceHUDComponent s_Instance;
+	static RP_SurveillanceHUDComponent GetInstance() { return s_Instance; }
+
 	override void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
+		s_Instance = this;
 		if (!GetGame().InPlayMode())
 			return;
 		GetGame().GetCallqueue().CallLater(TryClientInit, 250, true);
@@ -139,6 +146,8 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 
 	override void OnDelete(IEntity owner)
 	{
+		if (s_Instance == this)
+			s_Instance = null;
 		GetGame().GetCallqueue().Remove(TryClientInit);
 		GetGame().GetCallqueue().Remove(Tick);
 		StopFlashTick();
@@ -196,6 +205,28 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 
 	protected void Show()
 	{
+		// Keybind entry. Ensure the unit is powered on (idempotent —
+		// SetActive early-returns when the radar is already running and
+		// never touches the config vars, so this resumes the unit's
+		// previous state instead of resetting it). Server-routed: drives
+		// the MFD page + RP_SpeedRadarLogicComponent.SetActive so the
+		// logic component scans and broadcasts state/snapshot for this
+		// HUD (and visuals/audio for everyone else). Closing the HUD no
+		// longer powers off (see Hide), so the keybind mirrors the unit
+		// rather than driving it.
+		RequestRadarPower(GetPlayerCopVehicle(), true);
+		ShowOverlay();
+	}
+
+	// Builds (if needed) and shows the overlay, then starts the poll
+	// tick. Does NOT change radar power — the caller owns that decision.
+	// The keybind path (Show) powers the unit on first; the on-prop
+	// Power UserAction powers the unit itself and then routes here via
+	// NotifyPowerToggledFromAction for the local seated cop.
+	protected void ShowOverlay()
+	{
+		if (m_bVisible)
+			return;
 		if (!m_wRoot)
 		{
 			WorkspaceWidget ws = GetGame().GetWorkspace();
@@ -219,15 +250,28 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 		ResetDisplay();
 		m_wRoot.SetVisible(true);
 		m_bVisible = true;
-		IEntity copCar = GetPlayerCopVehicle();
-		m_LastCopCar = copCar;
-		// Server-routed toggle. Drives both the MFD screen power AND
-		// RP_SpeedRadarLogicComponent.SetActive on the cop car. The
-		// logic component begins its scan tick and broadcasts state +
-		// snapshot for this HUD (and visuals/audio for everyone else).
-		RequestRadarPower(copCar, true);
+		m_LastCopCar = GetPlayerCopVehicle();
 		GetGame().GetCallqueue().CallLater(Tick, (int)(m_fPollIntervalSeconds * 1000), true);
 		Tick();
+	}
+
+	// Called by the on-prop Power UserAction after it toggles unit power.
+	// Mirrors the overlay for the local player IF they're the seated cop
+	// of a radar car: power-on opens the overlay, power-off closes it.
+	// No-op for on-foot officers / non-cops (GetPlayerCopVehicle null) —
+	// they still toggled the unit's power but don't get the cop overlay.
+	void NotifyPowerToggledFromAction(bool poweredOn)
+	{
+		if (poweredOn)
+		{
+			if (GetPlayerCopVehicle())
+				ShowOverlay();
+		}
+		else if (m_bVisible)
+		{
+			Hide();
+			DestroyWidget();
+		}
 	}
 
 	protected void Hide()
@@ -236,8 +280,10 @@ class RP_SurveillanceHUDComponent : SCR_BaseGameModeComponent
 			m_wRoot.SetVisible(false);
 		GetGame().GetCallqueue().Remove(Tick);
 		StopFlashTick();
-		if (m_LastCopCar)
-			RequestRadarPower(m_LastCopCar, false);
+		// Power is decoupled from the HUD: closing the overlay no longer
+		// powers the unit off. The radar keeps its current state (power +
+		// settings) so the keybind/HUD mirrors the unit instead of
+		// driving it. Power-off now comes from the on-prop Power action.
 		m_LastCopCar = null;
 		m_eLastState = ERP_RadarVisualState.OFF;
 		m_bVisible = false;

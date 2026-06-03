@@ -11,19 +11,6 @@ Vehicle {
      Radius 5
     }
    }
-   additionalActions {
-    RP_ImpoundVehicleUserAction "{6966EA359CAAD10F}" {
-     ParentContextList {
-      "Impound" "Unflipper"
-     }
-     UIInfo SCR_ActionUIInfo "{6966EA35812261E6}" {
-      Name "Impound Vehicle"
-      Description "Impound the vehicle at the Police impound lot"
-     }
-     "Sort Priority" -99999
-     m_sRequiredFactionKey "Police"
-    }
-   }
   }
  }
 }
