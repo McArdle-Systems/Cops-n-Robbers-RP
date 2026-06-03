@@ -112,61 +112,45 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
      }
      "Sort Priority" 3
     }
-    RP_RadarSignalIncreaseUserAction "{69851442496BC59C}" {
+    RP_RadarAdjustDistanceUserAction "{69851442496BC59C}" {
      ParentContextList {
       "siren_lights"
      }
      UIInfo SCR_ActionUIInfo "{698514424E45D7D7}" {
       Name "Distance +"
      }
-     ActionTitle "Distance +"
      "Sort Priority" 4
-     "Signal name" "radar_cone_range_m"
-     "Max value" 120
-     "Min value" 10
-     m_sValueUnit "m"
+     m_fDeltaMeters 5
     }
-    RP_RadarSignalDecreaseUserAction "{6985144237C6FB1F}" {
+    RP_RadarAdjustDistanceUserAction "{6985144237C6FB1F}" {
      ParentContextList {
       "siren_lights"
      }
      UIInfo SCR_ActionUIInfo "{69851442A9E8CF92}" {
       Name "Distance -"
      }
-     ActionTitle "Distance -"
      "Sort Priority" 5
-     "Signal name" "radar_cone_range_m"
-     "Max value" 120
-     "Min value" 10
-     m_sValueUnit "m"
+     m_fDeltaMeters -5
     }
-    RP_RadarSignalIncreaseUserAction "{698514420000AA01}" {
+    RP_RadarAdjustTargetSpeedUserAction "{698514420000AA01}" {
      ParentContextList {
       "siren_lights"
      }
      UIInfo SCR_ActionUIInfo "{698514420000AA02}" {
       Name "Speed +"
      }
-     ActionTitle "Speed +"
      "Sort Priority" 6
-     "Signal name" "radar_target_speed_kmh"
-     "Max value" 200
-     "Min value" 10
-     m_sValueUnit "km/h"
+     m_fDeltaKmh 5
     }
-    RP_RadarSignalDecreaseUserAction "{698514420000AA03}" {
+    RP_RadarAdjustTargetSpeedUserAction "{698514420000AA03}" {
      ParentContextList {
       "siren_lights"
      }
      UIInfo SCR_ActionUIInfo "{698514420000AA04}" {
       Name "Speed -"
      }
-     ActionTitle "Speed -"
      "Sort Priority" 7
-     "Signal name" "radar_target_speed_kmh"
-     "Max value" 200
-     "Min value" 10
-     m_sValueUnit "km/h"
+     m_fDeltaKmh -5
     }
    }
   }
