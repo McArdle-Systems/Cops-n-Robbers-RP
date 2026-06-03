@@ -68,11 +68,10 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	[Attribute(defvalue: "radar_speed_kmh", desc: "Vehicle signal name updated each tick with the current radar reading. Bind this same name in the radar screen's AG0_MFDTextConfig.SignalName so the MFD framework substitutes it into the FormatString. Uses AddOrFindMPSignal so the value replicates to passenger clients.")]
 	protected string m_sSpeedSignalName;
 
-	[Attribute(defvalue: "radar_cone_range_m", desc: "Vehicle signal carrying the current cone range (m). Driven by the dash Distance knob (SCR_AdjustSignalAction) and read server-side each scan. Bind this same name on the knob action's signal slot. MP signal, so the value replicates and the cop driver's authority owns it.")]
-	protected string m_sConeRangeSignalName;
-
-	[Attribute(defvalue: "radar_target_speed_kmh", desc: "Vehicle signal carrying the current target speed / alert threshold (km/h). Driven by the dash Target Speed knob (SCR_AdjustSignalAction) and read server-side each scan. Bind this same name on the knob action's signal slot. MP signal, so the value replicates and the cop driver's authority owns it.")]
-	protected string m_sTargetSpeedSignalName;
+	// Note: cone range and target speed are NOT carried by signals. The
+	// vehicle's SignalsManagerComponent is owned by the driver client, so a
+	// server-side signal write is stomped by the driver's next sync — the
+	// settings ride the per-tick snapshot broadcast instead (see GetConeRange).
 
 	[Attribute(defvalue: "SOUND_RADAR_BEEPING", desc: "Sound event for the speed-lock alert. Fires once when the target first crosses the speed limit (including delayed firing if the target was already plate-locked and only later started speeding). Empty = silent. Played 3D positional from the SpeedRadar prop's RP_CopAudioComponent on every client.")]
 	protected string m_sLockSoundEvent;
@@ -142,8 +141,6 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	// each tick. The vehicle's SignalsManagerComponent is the host.
 	protected SignalsManagerComponent m_SignalsMgr;
 	protected int m_iSpeedSignalIdx = -1;
-	protected int m_iConeRangeSignalIdx = -1;
-	protected int m_iTargetSpeedSignalIdx = -1;
 
 	// ----------------------------------------------------------------------
 	// Client-cached snapshot (broadcast each tick from server)
@@ -170,6 +167,13 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	// Replicated copy of the speed-alert enabled flag. Same role as
 	// m_bSnapPlateReaderEnabled, for the Speed Alert action label.
 	protected bool m_bSnapSpeedAlertEnabled;
+	// Replicated copies of the cone range (m) and target speed (km/h). The
+	// server is the source of truth (m_fConeRangeMeters / m_fSpeedLimitKmh);
+	// these carry the value to every peer via the snapshot RPC so the dash
+	// knob labels and the server's own scan all read the same number. Seeded
+	// from the configured fields in OnPostInit so reads are sane pre-snapshot.
+	protected float m_fSnapConeRange;
+	protected float m_fSnapTargetSpeed;
 
 	// ----------------------------------------------------------------------
 	// Lifecycle
@@ -186,9 +190,12 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 		// renders FormatString-substituted "%1" as "inf" when the signal
 		// is unbound (see reforger_ag0_mfd_recipe).
 		GetGame().GetCallqueue().CallLater(PublishInitialSnapshot, 0, false);
-		// Every peer: register the knob signals so the dash actions and any
-		// display can resolve them regardless of radar power state.
-		GetGame().GetCallqueue().CallLater(EnsureSettingSignals, 0, false);
+		// Seed the replicated setting copies from the configured fields so the
+		// dash labels and scan read sane values on every peer before the first
+		// snapshot lands. The server's PublishInitialSnapshot then broadcasts
+		// the authoritative values and everyone converges.
+		m_fSnapConeRange = m_fConeRangeMeters;
+		m_fSnapTargetSpeed = m_fSpeedLimitKmh;
 	}
 
 	override void OnDelete(IEntity owner)
@@ -202,6 +209,9 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 		if (!Replication.IsServer())
 			return;
 		PublishSnapshot(ERP_RadarVisualState.OFF, 0, "—", false, LOCK_REASON_NONE);
+		// Broadcast the resting cone range / target speed once at spawn so
+		// clients show the configured values before the first knob press.
+		PublishSettings();
 	}
 
 	// ----------------------------------------------------------------------
@@ -275,52 +285,77 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	// read it for display. Falls back to the configured field default until
 	// the signal is registered. Knob steps are integers, so we round before
 	// clamping — keeps the value crisp and dedi-deterministic.
+	// The live radar settings, replicated to every peer in the per-tick
+	// snapshot (same transport as the channel-enable flags). Returns the
+	// snapshot copy rather than reading a signal: the vehicle's
+	// SignalsManagerComponent is owned by the DRIVER client, so a server-side
+	// signal write is overwritten by the driver's next sync — that's why the
+	// old signal-knob path read back the seed forever on a dedicated server
+	// (knob always computed seed+step, e.g. "55" every press). The server
+	// computes the authoritative value and broadcasts it; every peer — the
+	// server included — reads this copy.
 	float GetConeRange()
 	{
-		return ReadSettingSignal(m_iConeRangeSignalIdx, m_fConeRangeMeters, m_fConeRangeMinMeters, m_fConeRangeMaxMeters);
+		return m_fSnapConeRange;
 	}
 
 	float GetSpeedLimit()
 	{
-		return ReadSettingSignal(m_iTargetSpeedSignalIdx, m_fSpeedLimitKmh, m_fSpeedLimitMinKmh, m_fSpeedLimitMaxKmh);
+		return m_fSnapTargetSpeed;
 	}
 
 	bool  IsPlateReaderEnabled() { return m_bPlateReaderEnabled; }
 	bool  IsSpeedAlertEnabled() { return m_bSpeedAlertEnabled; }
 
-	protected float ReadSettingSignal(int idx, float fallback, float minV, float maxV)
-	{
-		if (!m_SignalsMgr || idx < 0)
-			return Math.Clamp(Math.Round(fallback), minV, maxV);
-		return Math.Clamp(Math.Round(m_SignalsMgr.GetSignalValue(idx)), minV, maxV);
-	}
-
-	// LEGACY (pre-signal): adds delta to the cone-range FIELD. No longer the
-	// live path — GetConeRange() now reads the replicated radar_cone_range_m
-	// signal driven by the dash Distance knob, so this only moves the seed.
-	// Safe to remove along with the old relay Distance +/- actions.
-	// Adds delta (may be negative) to the cone range, clamped to the
-	// configured min/max. Server-only.
+	// Adds delta (may be negative) to the cone range, clamped, then broadcasts
+	// the settings so every peer's GetConeRange() — the dash labels and the
+	// server's own scan — picks up the new value. Server-only; the value
+	// travels client-ward in a dedicated broadcast RPC, never a signal (see
+	// GetConeRange for why a signal can't carry this on a dedicated server).
+	// Reached through the player RPC relay because the knob's PerformAction
+	// runs on the client.
 	void AdjustConeRange(float delta)
 	{
 		if (!Replication.IsServer())
 			return;
-		m_fConeRangeMeters = Math.Clamp(m_fConeRangeMeters + delta, m_fConeRangeMinMeters, m_fConeRangeMaxMeters);
+		m_fConeRangeMeters = Math.Clamp(Math.Round(m_fConeRangeMeters + delta), m_fConeRangeMinMeters, m_fConeRangeMaxMeters);
+		PublishSettings();
 		Print(string.Format("[RP_SpeedRadarLogic] %1 Cone range -> %2 m (delta %3).", RoleTag(), m_fConeRangeMeters, delta), LogLevel.NORMAL);
 	}
 
-	// LEGACY (pre-signal): adds delta to the speed-limit FIELD. No longer the
-	// live path — GetSpeedLimit() now reads the replicated radar_target_speed_kmh
-	// signal driven by the dash Target Speed knob, so this only moves the seed.
-	// Safe to remove along with the old relay Target Speed +/- actions.
-	// Adds delta (may be negative) to the speed limit, clamped to the
-	// configured min/max. Server-only.
+	// Adds delta (may be negative) to the speed limit — same server-authoritative
+	// broadcast model as AdjustConeRange above.
 	void AdjustSpeedLimit(float delta)
 	{
 		if (!Replication.IsServer())
 			return;
-		m_fSpeedLimitKmh = Math.Clamp(m_fSpeedLimitKmh + delta, m_fSpeedLimitMinKmh, m_fSpeedLimitMaxKmh);
+		m_fSpeedLimitKmh = Math.Clamp(Math.Round(m_fSpeedLimitKmh + delta), m_fSpeedLimitMinKmh, m_fSpeedLimitMaxKmh);
+		PublishSettings();
 		Print(string.Format("[RP_SpeedRadarLogic] %1 Speed limit -> %2 km/h (delta %3).", RoleTag(), m_fSpeedLimitKmh, delta), LogLevel.NORMAL);
+	}
+
+	// Broadcast the live settings (cone range, target speed) to every peer.
+	// Server-authored; carried in their own RPC rather than the per-tick
+	// snapshot because (a) they change only on a knob press, and (b) the
+	// snapshot RPC is already at the engine's Rpc parameter limit. Applied
+	// locally first since Broadcast does not loop back to the sender, so the
+	// server's own scan reads the new value immediately.
+	protected void PublishSettings()
+	{
+		ApplySettingsLocal(m_fConeRangeMeters, m_fSpeedLimitKmh);
+		Rpc(RpcDo_Settings, m_fConeRangeMeters, m_fSpeedLimitKmh);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_Settings(float coneRange, float targetSpeed)
+	{
+		ApplySettingsLocal(coneRange, targetSpeed);
+	}
+
+	protected void ApplySettingsLocal(float coneRange, float targetSpeed)
+	{
+		m_fSnapConeRange = coneRange;
+		m_fSnapTargetSpeed = targetSpeed;
 	}
 
 	// Server-only. Enables/disables the plate-reader (LPR) detection
@@ -393,7 +428,6 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	{
 		if (!m_bActive)
 			return;
-		EnsureSettingSignals();
 		IEntity copCar = GetOwner();
 		if (!copCar)
 			return;
@@ -632,7 +666,9 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 	{
 		// Channel-enable flags are read here (not threaded through every call
 		// site) so the existing PublishSnapshot calls stay unchanged. They're
-		// server fields; PublishSnapshot only runs server-side.
+		// server fields; PublishSnapshot only runs server-side. (Cone range /
+		// target speed are NOT carried here — they have their own PublishSettings
+		// broadcast, since the snapshot RPC is already at the Rpc param limit.)
 		bool lprOn = m_bPlateReaderEnabled;
 		bool speedAlertOn = m_bSpeedAlertEnabled;
 		// Apply locally on server first — Broadcast does not loop back to
@@ -960,51 +996,6 @@ class RP_SpeedRadarLogicComponent : ScriptComponent
 		// tens of km/h per tick. 1000 is fast enough to read as instant
 		// while satisfying the engine's >0 requirement.
 		m_iSpeedSignalIdx = m_SignalsMgr.AddOrFindMPSignal(m_sSpeedSignalName, 0.5, 1000, 0);
-	}
-
-	// Registers the two replicated setting signals (cone range, target
-	// speed) the dash knobs drive. Runs on every peer so the knob actions
-	// and any display can resolve the signal by name; seeded with the
-	// clamped editor defaults so a fresh car reads sane values before the
-	// driver touches a knob. From then on the cop driver's authority owns
-	// the live value — same model as the radar_speed_kmh signal.
-	protected void EnsureSettingSignals()
-	{
-		if (m_SignalsMgr && m_iConeRangeSignalIdx >= 0 && m_iTargetSpeedSignalIdx >= 0)
-			return;
-		IEntity copCar = GetOwner();
-		if (!copCar)
-			return;
-		if (!m_SignalsMgr)
-			m_SignalsMgr = SignalsManagerComponent.Cast(copCar.FindComponent(SignalsManagerComponent));
-		if (!m_SignalsMgr)
-			return;
-		if (m_iConeRangeSignalIdx < 0)
-		{
-			float coneSeed = Math.Clamp(Math.Round(m_fConeRangeMeters), m_fConeRangeMinMeters, m_fConeRangeMaxMeters);
-			m_iConeRangeSignalIdx = m_SignalsMgr.AddOrFindMPSignal(m_sConeRangeSignalName, 0.5, 1000, coneSeed);
-			// AddOrFindMPSignal's default only applies when the signal is
-			// newly created. The native signal knob action (SCR_Scripted-
-			// SignalUserAction) resolves the same-named signal during the
-			// vehicle's action-manager init — which runs before this
-			// CallLater(0) — so the signal usually already exists at 0 and
-			// the seed above is discarded. Write it explicitly so the knob
-			// label and cone scan read the configured resting value. Server
-			// only: at spawn the unoccupied vehicle is server-authoritative,
-			// so the write replicates to all peers. Clients still register
-			// the index above (for reads) but must not force the value — a
-			// late-join client would otherwise stomp a knob value a driver
-			// already changed, before the authority re-syncs it.
-			if (Replication.IsServer())
-				m_SignalsMgr.SetSignalValue(m_iConeRangeSignalIdx, coneSeed);
-		}
-		if (m_iTargetSpeedSignalIdx < 0)
-		{
-			float speedSeed = Math.Clamp(Math.Round(m_fSpeedLimitKmh), m_fSpeedLimitMinKmh, m_fSpeedLimitMaxKmh);
-			m_iTargetSpeedSignalIdx = m_SignalsMgr.AddOrFindMPSignal(m_sTargetSpeedSignalName, 0.5, 1000, speedSeed);
-			if (Replication.IsServer())
-				m_SignalsMgr.SetSignalValue(m_iTargetSpeedSignalIdx, speedSeed);
-		}
 	}
 
 	protected void SetSpeedSignal(float kmh)
