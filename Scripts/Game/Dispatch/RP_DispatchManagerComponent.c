@@ -403,6 +403,20 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		unit.m_vSpawnPoint = spawnPos;
 		unit.m_eState = ERP_DispatchState.SPAWNED;
 		unit.m_fStateChangedAt = GetWorldTimeSeconds();
+
+		// Keep dispatched units out of the engine savegame. They're a
+		// runtime spawn pool reconciled only while this manager is alive
+		// (m_aUnits starts empty on a fresh server start), so anything the
+		// previous session persisted reloads as orphaned standing cops and
+		// parked cruisers with no manager — the same "AI standing around"
+		// failure the traffic system already guards against. Excludes the
+		// vehicle subtree (incl. supply-storage children, so cruiser supplies
+		// don't float), the group container, and the deferred crew members.
+		ExcludeFromPersistence(vehicle);
+		ExcludeFromPersistence(crewEnt);
+		ExcludeCrewMembers(crew);
+		crew.GetOnAllDelayedEntitySpawned().Insert(ExcludeCrewMembers);
+
 		m_aUnits.Insert(unit);
 		Print(string.Format("[RP_Dispatch] Spawned %1#%2 (vehicle=%3 crew=%4)", def.m_sTypeTag, unit.m_iId, vehicle, crew), LogLevel.NORMAL);
 		return unit;
@@ -943,6 +957,59 @@ class RP_DispatchManagerComponent : SCR_BaseGameModeComponent
 		params.TransformMode = ETransformMode.WORLD;
 		params.Transform[3] = pos;
 		return GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
+	}
+
+	// --- Persistence exclusion (mirrors RP_TrafficLoopComponent) ----------
+	// Stops the engine savegame from tracking a dispatched entity and its
+	// whole child hierarchy, and releases any data a prior session already
+	// saved for it. No-op when no save system is running (GetInstance() is
+	// null in workbench / save-less servers). Recursion reaches supply-storage
+	// child entities so excluded cruisers don't leave floating supplies.
+	protected void ExcludeFromPersistence(IEntity entity)
+	{
+		if (!entity)
+			return;
+		PersistenceSystem persistence = PersistenceSystem.GetInstance();
+		if (!persistence)
+			return;
+		ExcludeSubtree(persistence, entity);
+	}
+
+	protected void ExcludeSubtree(PersistenceSystem persistence, IEntity entity)
+	{
+		if (!entity)
+			return;
+		persistence.StopTracking(entity);
+		IEntity child = entity.GetChildren();
+		while (child)
+		{
+			ExcludeSubtree(persistence, child);
+			child = child.GetSibling();
+		}
+	}
+
+	// Crew characters spawn deferred and aren't children of the group
+	// container, so excluding the group never reaches them. Wired to the
+	// group's delayed-spawn invoker; idempotent, so also safe to call once
+	// inline for any member already present. Signature matches
+	// ScriptInvokerAIGroup.
+	protected void ExcludeCrewMembers(SCR_AIGroup crew)
+	{
+		if (!crew)
+			return;
+		PersistenceSystem persistence = PersistenceSystem.GetInstance();
+		if (!persistence)
+			return;
+		array<AIAgent> agents = {};
+		crew.GetAgents(agents);
+		foreach (AIAgent agent : agents)
+		{
+			if (!agent)
+				continue;
+			IEntity character = agent.GetControlledEntity();
+			if (character)
+				ExcludeSubtree(persistence, character);
+		}
 	}
 
 	// Spawns the prefab using the reference entity's full world transform

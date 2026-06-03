@@ -644,9 +644,15 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 	}
 
 	// Tells the engine savegame to stop tracking (and to release any
-	// already-persisted data for) a traffic-spawned entity. Guarded so it
-	// is a harmless no-op when no persistence system is active — the
-	// workbench and save-less servers return null from GetInstance().
+	// already-persisted data for) a traffic-spawned entity AND every entity
+	// in its child hierarchy. The recursion matters for the vehicle: the
+	// vanilla supply-storage feature loads supplies as separate child
+	// entities, and StopTracking on the parent vehicle alone does NOT reach
+	// them — so a car excluded from the save would still leave its supplies
+	// behind, reloading at deck height with no car underneath (the "floating
+	// cargo" bug). StopTracking on a not-tracked child is a harmless no-op.
+	// Guarded so the whole thing no-ops when no persistence system is active
+	// — the workbench and save-less servers return null from GetInstance().
 	protected void ExcludeFromPersistence(IEntity entity)
 	{
 		if (!entity)
@@ -654,7 +660,48 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		PersistenceSystem persistence = PersistenceSystem.GetInstance();
 		if (!persistence)
 			return;
+		ExcludeSubtree(persistence, entity);
+	}
+
+	protected void ExcludeSubtree(PersistenceSystem persistence, IEntity entity)
+	{
+		if (!entity)
+			return;
 		persistence.StopTracking(entity);
+		IEntity child = entity.GetChildren();
+		while (child)
+		{
+			ExcludeSubtree(persistence, child);
+			child = child.GetSibling();
+		}
+	}
+
+	// Excludes each crew member's character (and its gear) from the save.
+	// The character entities are spawned deferred and are NOT children of
+	// the group container, so StopTracking on the group never reaches them
+	// — left tracked, they reload after a restart with no group, no vehicle
+	// and no orders, and stand around forever (the "AI standing around" bug,
+	// which in turn blocks the spawn point so the pool can't top back up).
+	// Safe to call repeatedly: StopTracking is idempotent. Signature matches
+	// ScriptInvokerAIGroup so it can be wired directly to the group's
+	// delayed-spawn invoker.
+	protected void ExcludeCrewMembers(SCR_AIGroup crew)
+	{
+		if (!crew)
+			return;
+		PersistenceSystem persistence = PersistenceSystem.GetInstance();
+		if (!persistence)
+			return;
+		array<AIAgent> agents = {};
+		crew.GetAgents(agents);
+		foreach (AIAgent agent : agents)
+		{
+			if (!agent)
+				continue;
+			IEntity character = agent.GetControlledEntity();
+			if (character)
+				ExcludeSubtree(persistence, character);
+		}
 	}
 
 	// Deletes character entities for any AI agent in the group whose
@@ -790,6 +837,11 @@ class RP_TrafficLoopComponent : SCR_BaseGameModeComponent
 		// with no save system) — GetInstance() returns null there.
 		ExcludeFromPersistence(vehicleEnt);
 		ExcludeFromPersistence(crewEnt);
+		// Crew characters spawn deferred and aren't children of the group,
+		// so the two calls above miss them. Exclude any present this frame,
+		// then hook the delayed-spawn event to catch the rest as they appear.
+		ExcludeCrewMembers(crew);
+		crew.GetOnAllDelayedEntitySpawned().Insert(ExcludeCrewMembers);
 
 		AIWaypoint getIn = SpawnWaypoint(m_sGetInWaypointPrefab, vehicleEnt.GetOrigin());
 		if (getIn)
