@@ -21,7 +21,7 @@
 
 class RP_ImpoundVehicleUserAction : ScriptedUserAction
 {
-	[Attribute(defvalue: "PD", desc: "Faction key required to see / perform the action. Walks the user entity's hierarchy for FactionAffiliationComponent. Leave empty to disable the faction gate.")]
+	[Attribute(defvalue: "Police", desc: "Faction key required to see / perform the action. Walks the user entity's hierarchy for FactionAffiliationComponent. Leave empty to disable the faction gate.")]
 	protected string m_sRequiredFactionKey;
 
 	[Attribute(defvalue: "1", desc: "Require the user to be holding an item with RP_ImpoundToolComponent. Turn off if you want the action visible regardless of held item (e.g. for testing).")]

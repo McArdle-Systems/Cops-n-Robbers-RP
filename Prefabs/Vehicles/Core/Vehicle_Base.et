@@ -11,6 +11,17 @@ Vehicle {
      Radius 5
     }
    }
+   additionalActions {
+    RP_ImpoundVehicleUserAction "{6988284EA85BD13F}" {
+     ParentContextList {
+      "Impound"
+     }
+     UIInfo SCR_ActionUIInfo "{6988284E972D7049}" {
+      Name "Impound Vehicle"
+      Description "Impound the vehicle at the police impound lot"
+     }
+    }
+   }
   }
  }
 }
