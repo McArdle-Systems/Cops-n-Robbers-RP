@@ -81,6 +81,12 @@ Vehicle : "{712FF9D92734DE68}Prefabs/Vehicles/Wheeled/Suburban/Suburban_police.e
      m_fAngularSpeedLimit 1.5
      m_fSuggestedUsersMultiplier 0
     }
+    SCR_PushVehicleAction "{60DA85DB5FFC6E4F}" {
+     m_fMassToForce 8
+     m_fForceLimit 12000
+     m_fLinearSpeedLimit 1.5
+     m_fAngularSpeedLimit 1.5
+    }
     RP_RadarTogglePowerUserAction "{697E6C0AD1E2FB01}" {
      ParentContextList {
       "siren_lights"
