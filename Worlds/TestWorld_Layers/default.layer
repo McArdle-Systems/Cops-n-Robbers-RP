@@ -1,88 +1,91 @@
-GenericWorldPPEffect : "{3AFFB0B0EC055284}Prefabs/World/DefaultWorld/GenericWorldPP_Default.et" {
- coords 581.888 0 460.786
-}
-$grp GenericEntity : "{227EB3EF8DB45BF6}Prefabs/Items/RP_ImpountLotSlot.et" {
+GenericEntity RP_ImpoundLot {
+ coords 672.332 0 493.695
+ angles 0 -37.104 0
  {
-  coords 672.256 2 504.473
-  angles 0 -124.251 0
- }
- {
-  coords 674.283 2 501.523
-  angles 0 -124.251 0
- }
- {
-  coords 675.663 2 498.566
-  angles 0 -124.251 0
- }
- {
-  coords 678.09 2 495.198
-  angles 0 -124.251 0
- }
- {
-  coords 680.222 2 492.431
-  angles 0 -124.251 0
- }
-}
-$grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V1.et" {
- {
-  coords 672.999 -0.163 479.343
-  angles 0 -38.241 0
- }
- {
-  coords 677.694 0.021 483.168
-  angles 0 -38.241 0
- }
- {
-  coords 682.348 0.031 486.986
-  angles 0 -38.241 0
- }
- {
-  coords 687.066 0 490.92
-  angles 0 -123.41 0
- }
- {
-  coords 683.634 0 495.927
-  angles 0 -123.41 0
- }
- {
-  coords 680.196 0 500.931
-  angles 0 -123.41 0
- }
- {
-  coords 676.746 0 505.925
-  angles 0 -123.41 0
- }
- {
-  coords 673.575 0 510.468
-  angles 0 146.071 0
- }
- {
-  coords 666.2 0 505.312
-  angles 0 -33.9 0
- }
- {
-  coords 665.809 0.024 488.278
-  angles 0 -126.371 0
- }
- {
-  coords 662.123 -0.045 493.1
-  angles 0 -126.371 0
- }
- {
-  coords 658.393 -0.009 497.816
-  angles 0 52.031 0
- }
- {
-  coords 663.703 0 503.64
-  angles 0 -33.9 0
- }
- {
-  coords 669.53 0 483.484
-  angles 0 -127.294 0
- }
- {
-  coords 673.015 0 479.407
-  angles 0 -129.486 0
+  $grp GenericEntity : "{227EB3EF8DB45BF6}Prefabs/Items/RP_ImpountLotSlot.et" {
+   {
+    coords 6.441 2 8.642
+    angles 0 -87.147 0
+   }
+   {
+    coords 6.278 2 5.066
+    angles 0 -87.147 0
+   }
+   {
+    coords 5.595 2 1.875
+    angles 0 -87.147 0
+   }
+   {
+    coords 5.498 2 -2.275
+    angles 0 -87.147 0
+   }
+   {
+    coords 5.53 2 -5.768
+    angles 0 -87.147 0
+   }
+  }
+  $grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V1.et" {
+   {
+    coords -8.127 -0.163 -11.849
+    angles 0 -1.137 0
+   }
+   {
+    coords -2.075 0.021 -11.631
+    angles 0 -1.137 0
+   }
+   {
+    coords 3.94 0.031 -11.393
+    angles 0 -1.137 0
+   }
+   {
+    coords 10.076 0 -11.102
+    angles 0 -86.306 0
+   }
+   {
+    coords 10.36 0 -5.038
+    angles 0 -86.306 0
+   }
+   {
+    coords 10.637 0 1.027
+    angles 0 -86.306 0
+   }
+   {
+    coords 10.898 0 7.091
+    angles 0 -86.306 0
+   }
+   {
+    coords 11.109 0 12.627
+    angles 0 -176.825 0
+   }
+   {
+    coords 2.117 0 12.964
+    angles 0 3.204 0
+   }
+   {
+    coords -8.471 0.024 -0.385
+    angles 0 -89.267 0
+   }
+   {
+    coords -8.502 -0.045 5.684
+    angles 0 -89.267 0
+   }
+   {
+    coords -8.631 -0.009 11.695
+    angles 0 89.135 0
+   }
+   {
+    coords -0.883 0 13.137
+    angles 0 3.204 0
+   }
+   {
+    coords -8.395 0 -6.454
+    angles 0 -90.19 0
+   }
+   {
+    coords -8.075 0 -11.808
+    angles 0 -92.382 0
+   }
+  }
  }
 }
 GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall_01_blue.et" {
@@ -130,9 +133,6 @@ GenericEntity : "{58DC15985037DC66}Prefabs/Props/Services/PhoneWall_01/PhoneWall
  }
  coords 655.703 1.115 535.461
  angles 0 -113.798 0
-}
-StaticModelEntity : "{6C98E4E8DE0A7F79}Prefabs/Vegetation/Plant/Clutter_base.et" {
- coords 904.055 0 658.114
 }
 GenericEntity : "{94526D008D5104BB}Prefabs/Structures/Signs/Warnings/SignTelephone_01_pole.et" {
  coords 655.984 -0.06 534.313
