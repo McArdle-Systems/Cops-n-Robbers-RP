@@ -193,6 +193,12 @@ is built on the standalone **CustomWorld_Base** terrain, with
 `SCR_AIWorld` carried cnr-side and navmesh committed to the repo.
 Just open it and Press Play.
 
+> **Terrain dependency:** `CustomWorld_Base` lives in a separate addon —
+> [McArdle-Systems/CustomWorld](https://github.com/McArdle-Systems/CustomWorld).
+> Clone it alongside this repo and enable it as a Workbench dependency.
+> The [`cops-n-robbers-rp.code-workspace`](cops-n-robbers-rp.code-workspace)
+> multi-root workspace expects it at `../CustomWorld`.
+
 If recreating from scratch on a new world:
 
 1. Open the world in Workbench (must be a real terrain world — empty
